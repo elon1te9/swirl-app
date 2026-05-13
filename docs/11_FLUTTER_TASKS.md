@@ -8,6 +8,18 @@ Implement tasks stage by stage.
 
 Do not jump to the next stage unless explicitly requested.
 
+## Required docs
+
+Before implementing Flutter tasks, read:
+
+- `docs/00_PROJECT_OVERVIEW.md`
+- `docs/03_API_CONTRACT.md`
+- `docs/04_FRONTEND_ARCHITECTURE.md`
+- `docs/05_LEARNING_LOGIC.md`
+- `docs/06_DAILY_TEST_AND_STREAK.md`
+- `docs/08_ERROR_HANDLING.md`
+- `docs/12_UI_UX_GUIDE.md`
+
 ## Flutter stack
 
 Use:
@@ -23,56 +35,63 @@ Use:
 
 ## Recommended project structure
 
-Use a simple layered structure:
+Use this structure:
 
 ```text
-lib/
-  main.dart
-  app/
-    app.dart
-    router.dart
-    theme.dart
-  core/
-    constants/
-    errors/
-    storage/
-    network/
-    utils/
-  data/
-    api/
-    dto/
-    repositories/
-  domain/
-    models/
-    services/
-  presentation/
-    screens/
-    widgets/
-    state/
+frontend/
+  swirl_app/
+    lib/
+      main.dart
+      app/
+        app.dart
+        router.dart
+        theme.dart
+      core/
+        constants/
+        errors/
+        storage/
+        network/
+        utils/
+      data/
+        api/
+        dto/
+        repositories/
+      domain/
+        models/
+        services/
+      presentation/
+        screens/
+        widgets/
+        state/
 ```
 
 ## General rules
 
 - Keep UI separate from API calls.
-- Store JWT token locally.
-- Send JWT token in `Authorization: Bearer <token>` header.
-- Use backend media URLs for images and audio.
 - Do not hardcode learning content in Flutter.
+- Load sections, levels, words, exercises, profile, and daily test from backend API.
+- Store JWT token in secure local storage.
+- Send JWT token in the `Authorization` header.
+- Use backend media URLs for images and audio.
 - Do not send a request for every exercise.
-- Load a full level session once, complete tasks locally, then send final result to backend.
+- Load a full level session once.
+- Complete exercises locally.
+- Send final result to backend after all exercises are completed.
+- Handle loading, error, and empty states on every screen that uses API data.
 
 ## Stage 1. Project setup
 
 Tasks:
 
-- Create Flutter project.
+- Create Flutter project inside `frontend`.
 - Configure Android target.
 - Add dependencies.
 - Configure app theme.
-- Configure routing.
-- Configure API client.
+- Configure routing with go_router.
+- Configure Dio API client.
 - Configure secure token storage.
-- Create base folders.
+- Create base folder structure.
+- Add base reusable UI components.
 
 Recommended dependencies:
 
@@ -90,6 +109,7 @@ Expected result:
 - App starts on Android.
 - Basic routing works.
 - API client can be configured with backend base URL.
+- `flutter analyze` passes.
 
 ## Stage 2. Authentication screens
 
@@ -102,17 +122,18 @@ Screens:
 
 Tasks:
 
-- Create loading screen.
-- Create first screen.
+- Create loading/splash screen.
+- Create first/start screen.
 - Create login form.
 - Create sign up form.
-- Validate input fields.
 - Load avatars for sign up.
 - Implement login request.
 - Implement registration request.
 - Save JWT token after successful auth.
+- Call `/api/auth/me` when needed to validate current user.
 - Redirect authenticated user to Home page.
 - Redirect unauthenticated user to First/Login screen.
+- Show validation and API errors.
 
 Validation:
 
@@ -138,6 +159,7 @@ Expected result:
 - User can login.
 - JWT is saved locally.
 - User remains authenticated after app restart.
+- Auth errors are shown clearly.
 
 ## Stage 3. Home and profile
 
@@ -162,6 +184,7 @@ Tasks:
 - Show learned words count.
 - Show completed levels count.
 - Show section progress.
+- Implement avatar change if backend endpoint is ready.
 - Implement logout.
 
 Logout rules:
@@ -175,6 +198,7 @@ Expected result:
 - User can view home page.
 - User can view profile.
 - User can logout.
+- Profile data is loaded from API.
 
 ## Stage 4. Sections and level map
 
@@ -212,6 +236,7 @@ Expected result:
 - User can open level map.
 - Locked levels are visually disabled.
 - Available levels can be opened.
+- Completed levels can be repeated.
 
 ## Stage 5. Learn words
 
@@ -241,6 +266,7 @@ Expected result:
 - User can study all words of a level.
 - Learned words are saved on backend.
 - User can continue to exercises.
+- Missing media does not crash the app.
 
 ## Stage 6. Exercises
 
@@ -276,6 +302,7 @@ Expected result:
 - User can complete all exercises.
 - App does not request backend for every exercise.
 - Final result is sent once after all exercises.
+- Correct and incorrect answer states are visible.
 
 ## Stage 7. Level result
 
@@ -337,6 +364,7 @@ Tasks:
 - Handle no internet connection gracefully.
 - Handle empty sections or empty levels.
 - Handle missing media gracefully.
+- Show friendly messages instead of raw exceptions.
 
 Expected result:
 
@@ -348,6 +376,7 @@ Expected result:
 
 Tasks:
 
+- Follow `docs/12_UI_UX_GUIDE.md`.
 - Check small Android screens.
 - Avoid overflow.
 - Ensure forms work with keyboard open.
