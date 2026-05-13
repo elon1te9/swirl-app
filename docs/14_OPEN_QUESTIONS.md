@@ -176,17 +176,33 @@ Should backend verify answers again on level completion, or trust Flutter's `isC
 
 Recommended MVP decision:
 
-For MVP, backend may trust Flutter's `isCorrect`, but the design should allow backend verification later.
+Backend should recalculate correctness on level completion.
 
-Recommended safer approach:
+Do not trust Flutter `isCorrect` for final progress.
 
-Backend can recalculate correctness using `exerciseId`, stored correct answer, and normalized `userAnswer`.
+Keep `isCorrect` in the API request only as optional client-side information if needed.
 
 Reason:
 
 This improves consistency and prevents accidental client-side mistakes.
 
-## 12. Daily test repeat behavior
+## 12. Minimal seed before auth
+
+Question:
+
+Should auth registration be implemented before any content seed exists, or should minimal seed exist first?
+
+Recommended MVP decision:
+
+Minimal seed for avatars, sections, and levels should exist before auth.
+
+Full words and exercises seed can remain in Stage 5.
+
+Reason:
+
+Registration needs avatars and existing levels to create initial user progress reliably.
+
+## 13. Daily test repeat behavior
 
 Question:
 
@@ -204,7 +220,7 @@ Possible alternative:
 
 Allow repeat attempts but update only the latest result.
 
-## 13. Daily test question count
+## 14. Daily test question count
 
 Question:
 
@@ -217,7 +233,7 @@ Recommended MVP decision:
 - if learned words count is less than 15, use fewer questions
 - if learned words count is less than 5, daily test is unavailable
 
-## 14. CEFR levels in early seed
+## 15. CEFR levels in early seed
 
 Question:
 
@@ -231,7 +247,7 @@ Reason:
 
 The target audience is beginners, and CEFR complexity is not central to the MVP.
 
-## 15. Media files availability
+## 16. Media files availability
 
 Question:
 
@@ -245,7 +261,7 @@ Reason:
 
 API and database should support media from the start, but real assets can be added gradually.
 
-## 16. Hubs folder
+## 17. Hubs folder
 
 Question:
 
@@ -261,7 +277,7 @@ swirl MVP does not require realtime features.
 
 Keep the `Hubs` folder only if the project template includes it.
 
-## 17. Repository layer
+## 18. Repository layer
 
 Question:
 
@@ -277,7 +293,7 @@ Reason:
 
 This keeps the educational MVP simpler.
 
-## 18. DTO folder
+## 19. DTO folder
 
 Question:
 
@@ -303,7 +319,7 @@ Models/
 Services/
 ```
 
-## 19. Refresh tokens
+## 20. Refresh tokens
 
 Question:
 
@@ -317,7 +333,7 @@ Reason:
 
 JWT access token is enough for the educational MVP.
 
-## 20. Password reset
+## 21. Password reset
 
 Question:
 
@@ -331,7 +347,7 @@ Reason:
 
 Email functionality is out of MVP scope.
 
-## 21. Dark theme
+## 22. Dark theme
 
 Question:
 
@@ -345,7 +361,7 @@ Reason:
 
 The design target is a light, soft, friendly style.
 
-## 22. Offline mode
+## 23. Offline mode
 
 Question:
 
@@ -359,7 +375,7 @@ Reason:
 
 MVP only needs local token storage and optionally local unfinished attempt state.
 
-## 23. Multiple correct answers
+## 24. Multiple correct answers
 
 Question:
 
@@ -373,7 +389,7 @@ Reason:
 
 MVP answer checking uses one exact normalized correct answer.
 
-## 24. Typo tolerance
+## 25. Typo tolerance
 
 Question:
 
@@ -387,7 +403,7 @@ Reason:
 
 MVP uses exact normalized matching.
 
-## 25. Spaced repetition
+## 26. Spaced repetition
 
 Question:
 

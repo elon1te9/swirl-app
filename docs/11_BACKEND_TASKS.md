@@ -101,12 +101,60 @@ Expected result:
 - Initial migration is created.
 - `dotnet build` passes.
 
+## Stage 2.5. Minimal seed for auth prerequisites
+
+Read before starting:
+
+- `docs/02_DATABASE_SCHEMA.md`
+- `docs/08_SEED_DATA.md`
+- `docs/DECISIONS.md`
+
+Goal:
+
+- Create the minimal seed data required for correct user registration.
+- Prepare avatars, sections, and levels before auth so Stage 3 can create initial user progress.
+
+Tasks:
+
+- Add seed logic in `Data`.
+- Create at least 4 predefined avatars.
+- Create 4 sections:
+  - Food
+  - Science
+  - Health
+  - Wardrobe
+- Create levels for sections.
+- Ensure MVP logic supports 5 normal levels and 1 final test for each section.
+- Make the seed as idempotent as practical.
+- Allow early seed reduction only for words and exercises, but not in a way that breaks auth initial progress.
+- Do not create words, exercises, or exercise options at this stage if that would complicate the implementation.
+
+Expected result:
+
+- Database contains avatars, sections, and levels after Stage 2.5.
+- Stage 3 registration can create initial level progress.
+- The first level of each section can be made available by default.
+- `dotnet build` passes.
+
+Do not:
+
+- implement auth
+- create controllers or endpoints
+- create words, exercises, or exercise options
+- add admin endpoints
+- create a separate `Seed` folder
+
 ## Stage 3. Auth
 
 Read before starting:
 
 - `docs/03_API_CONTRACT.md`
 - `docs/04_AUTH_AND_SECURITY.md`
+
+Dependencies:
+
+- Stage 3 depends on Stage 2.5 minimal seed.
+- Registration assumes that sections and levels already exist.
 
 Tasks:
 
@@ -133,7 +181,10 @@ Registration must:
 - create user profile
 - assign avatar
 - create initial level progress
-- make first level of each section available by default
+- for existing levels, make the first level of each section `available`
+- for existing levels, make all other normal levels `locked`
+- for existing levels, make all final tests `locked`
+- if no levels exist, registration must not crash, but this state means Stage 2.5 was not completed correctly
 - return JWT and user DTO
 
 Expected result:
@@ -175,27 +226,40 @@ Expected result:
 - User cannot access another user's profile.
 - `dotnet build` passes.
 
-## Stage 5. Seed content
+## Stage 5. Full learning content seed
 
 Read before starting:
 
 - `docs/08_SEED_DATA.md`
 
+Dependencies:
+
+- Stage 5 depends on Stage 2.
+- Stage 5 enriches learning content after auth prerequisites already exist from Stage 2.5.
+
 Tasks:
 
 - Add seed logic in `Data`.
-- Seed avatars.
-- Seed sections.
-- Seed levels.
 - Seed words.
 - Seed exercises.
 - Seed exercise options.
-- Make seed logic idempotent if practical.
+- Optionally enrich sections and levels if needed.
+- Keep seed logic idempotent if practical.
+
+This stage is primarily responsible for:
+
+- words
+- exercises
+- exercise options
+
+Already expected to exist before this stage:
+
+- avatars
+- sections
+- levels
 
 Minimum early MVP seed:
 
-- 4 avatars
-- 4 sections
 - at least 2 normal levels per section
 - 1 final test per section
 - 5 words per normal level
@@ -299,11 +363,15 @@ Tasks:
 - Implement level completion endpoint.
 - Save level attempts.
 - Save user answers.
-- Count mistakes.
+- Recalculate answer correctness on backend.
+- Do not trust Flutter `isCorrect` as the source of truth.
+- Flutter may still send `isCorrect`, but backend must calculate final correctness using `exerciseId`, stored correct answer, and normalized `userAnswer`.
+- Calculate `mistakes_count` on backend.
 - Increment attempts count.
-- Complete level only if mistakes count is 0.
-- Unlock next level only if mistakes count is 0.
+- Complete level only if backend-calculated mistakes count is 0.
+- Unlock next level only if backend-calculated mistakes count is 0.
 - Unlock final test after all normal levels are completed.
+- Base completion and unlock logic on backend-calculated correctness.
 - Update streak after every completed attempt.
 
 Endpoints:
@@ -382,6 +450,12 @@ Expected result:
 - Flutter can integrate with the API.
 - `dotnet build` passes.
 
+## Stage dependencies
+
+- Stage 2 -> Stage 2.5 -> Stage 3
+- Stage 5 depends on Stage 2 and enriches learning content after auth prerequisites exist
+- Later content-dependent stages assume Stage 2.5 and Stage 5 were completed appropriately
+
 ## Important implementation rules
 
 - Use current user id from JWT for user-specific operations.
@@ -393,6 +467,8 @@ Expected result:
 - Put service interfaces in `Interfaces`.
 - Put entities and request/response models in `Models`.
 - Put database context and seed logic in `Data`.
+- Each stage that introduces endpoints should follow `docs/09_ERROR_HANDLING.md` immediately.
+- Stage 10 is final alignment and polish, not the first time error handling is considered.
 - Do not implement non-MVP features unless explicitly requested.
 
 ## Verification after each stage

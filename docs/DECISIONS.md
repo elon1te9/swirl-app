@@ -211,17 +211,27 @@ The user should only see that the answer is incorrect.
 
 Decision:
 
-For MVP, backend may accept Flutter's `isCorrect` value.
+Backend must recalculate correctness.
 
-Preferred safer implementation:
+Flutter's `isCorrect` is not trusted as the source of truth.
 
-Backend recalculates correctness using `exerciseId`, stored correct answer, and normalized `userAnswer`.
+Final `mistakesCount`, level completion, and unlock logic are based on backend-calculated correctness using `exerciseId`, stored correct answer, and normalized `userAnswer`.
 
 Reason:
 
 This prevents accidental client-side inconsistencies and keeps progress reliable.
 
-## 16. Level session loading
+## 16. Minimal seed before auth
+
+Decision:
+
+Before implementing auth registration, the backend must have minimal seed data for avatars, sections, and levels.
+
+This allows registration to assign avatar and create initial level progress.
+
+Full words and exercises seed can be implemented later in Stage 5.
+
+## 17. Level session loading
 
 Decision:
 
@@ -234,7 +244,7 @@ Correct flow:
 3. Flutter completes exercises locally.
 4. Flutter sends final answers once after the session is finished.
 
-## 17. Unfinished level attempts
+## 18. Unfinished level attempts
 
 Decision:
 
@@ -246,7 +256,7 @@ Reason:
 
 This keeps MVP backend simpler.
 
-## 18. Media storage
+## 19. Media storage
 
 Decision:
 
@@ -264,7 +274,7 @@ Example:
 
 Do not store absolute local file system paths in the database.
 
-## 19. Avatars
+## 20. Avatars
 
 Decision:
 
@@ -276,7 +286,7 @@ Users may change avatar later if the endpoint is implemented.
 
 User-uploaded avatars are out of MVP scope.
 
-## 20. Seed data
+## 21. Seed data
 
 Decision:
 
@@ -293,7 +303,7 @@ Seed should create:
 
 Admin panel UI is out of MVP scope.
 
-## 21. Admin endpoints
+## 22. Admin endpoints
 
 Decision:
 
@@ -303,7 +313,7 @@ Use seed data first.
 
 Admin endpoints may be added later if explicitly requested.
 
-## 22. Auth
+## 23. Auth
 
 Decision:
 
@@ -319,7 +329,7 @@ All user-specific endpoints require JWT.
 
 `GET /api/avatars` may be public or protected.
 
-## 23. Refresh tokens
+## 24. Refresh tokens
 
 Decision:
 
@@ -327,7 +337,7 @@ Do not implement refresh tokens in MVP.
 
 JWT access token is enough for the educational MVP.
 
-## 24. Email confirmation and password reset
+## 25. Email confirmation and password reset
 
 Decision:
 
@@ -341,13 +351,13 @@ Reason:
 
 Email functionality is out of MVP scope.
 
-## 25. Frontend state management
+## 26. Frontend state management
 
 Decision:
 
 Use Riverpod for Flutter state management.
 
-## 26. Frontend navigation
+## 27. Frontend navigation
 
 Decision:
 
@@ -369,7 +379,7 @@ Recommended routes:
 /daily-test
 ```
 
-## 27. Frontend API client
+## 28. Frontend API client
 
 Decision:
 
@@ -381,13 +391,13 @@ JWT must be sent in the header:
 Authorization: Bearer <token>
 ```
 
-## 28. Frontend token storage
+## 29. Frontend token storage
 
 Decision:
 
 Use `flutter_secure_storage` for JWT token storage.
 
-## 29. Frontend media loading
+## 30. Frontend media loading
 
 Decision:
 
@@ -395,7 +405,7 @@ Flutter should load images and audio from backend URLs.
 
 Do not hardcode learning media in Flutter.
 
-## 30. UI style
+## 31. UI style
 
 Decision:
 
@@ -403,7 +413,7 @@ Use a light, soft, friendly, cartoon-like style.
 
 Dark theme is out of MVP scope.
 
-## 31. Platform scope
+## 32. Platform scope
 
 Decision:
 
@@ -415,7 +425,7 @@ Out of scope:
 - web
 - desktop
 
-## 32. Monetization scope
+## 33. Monetization scope
 
 Decision:
 
@@ -426,7 +436,7 @@ Do not implement in MVP:
 - ads
 - internal currency
 
-## 33. Gamification scope
+## 34. Gamification scope
 
 Decision:
 
@@ -439,7 +449,7 @@ Do not implement in MVP:
 
 Streak is included in MVP.
 
-## 34. Daily test algorithm
+## 35. Daily test algorithm
 
 Decision:
 
@@ -447,7 +457,7 @@ Use simple random selection from learned words.
 
 Do not implement spaced repetition in MVP.
 
-## 35. Flutter offline behavior
+## 36. Flutter offline behavior
 
 Decision:
 
@@ -459,7 +469,7 @@ Allowed local storage:
 - optional unfinished level attempt
 - optional temporary cached state
 
-## 36. Hubs folder
+## 37. Hubs folder
 
 Decision:
 
@@ -467,7 +477,7 @@ Keep `Hubs` folder only if the project template contains it.
 
 Do not use SignalR in MVP unless explicitly requested.
 
-## 37. Error response format
+## 38. Error response format
 
 Decision:
 
@@ -487,7 +497,7 @@ Recommended format:
 }
 ```
 
-## 38. Build verification
+## 39. Build verification
 
 Decision:
 
