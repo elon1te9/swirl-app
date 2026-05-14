@@ -1,0 +1,6 @@
+@Swirl.Api_HostAddress = http://localhost:5122
+
+GET {{Swirl.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
