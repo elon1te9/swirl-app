@@ -113,6 +113,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IWordLearningService, WordLearningService>();
+builder.Services.AddScoped<IStreakService, StreakService>();
+builder.Services.AddScoped<IDailyTestService, DailyTestService>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddSingleton<IPasswordHashService, PasswordHashService>();
 
