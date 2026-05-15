@@ -13,7 +13,8 @@ namespace Swirl.Api.Controllers;
 [Route("api/levels")]
 public class LevelsController(
     IContentService contentService,
-    IWordLearningService wordLearningService) : ControllerBase
+    IWordLearningService wordLearningService,
+    ILearningService learningService) : ControllerBase
 {
     [HttpGet("{levelId:int}")]
     public async Task<ActionResult<LevelDetailsResponse>> GetLevel(
@@ -76,6 +77,56 @@ public class LevelsController(
         try
         {
             return Ok(await wordLearningService.MarkLevelWordsLearnedAsync(
+                userId.Value,
+                levelId,
+                request,
+                cancellationToken));
+        }
+        catch (ApiException exception)
+        {
+            return ToErrorResult(exception);
+        }
+    }
+
+    [HttpGet("{levelId:int}/session")]
+    public async Task<ActionResult<LevelSessionResponse>> GetLevelSession(
+        int levelId,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return CreateUnauthorizedResult();
+        }
+
+        try
+        {
+            return Ok(await learningService.GetLevelSessionAsync(
+                userId.Value,
+                levelId,
+                cancellationToken));
+        }
+        catch (ApiException exception)
+        {
+            return ToErrorResult(exception);
+        }
+    }
+
+    [HttpPost("{levelId:int}/complete")]
+    public async Task<ActionResult<CompleteLevelResponse>> CompleteLevel(
+        int levelId,
+        CompleteLevelRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return CreateUnauthorizedResult();
+        }
+
+        try
+        {
+            return Ok(await learningService.CompleteLevelAsync(
                 userId.Value,
                 levelId,
                 request,
