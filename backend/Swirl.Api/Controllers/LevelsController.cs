@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Swirl.Api.Interfaces;
 using Swirl.Api.Requests;
 using Swirl.Api.Responses;
-using Swirl.Api.Services;
 
 namespace Swirl.Api.Controllers;
 
@@ -49,17 +48,10 @@ public class LevelsController(
             return CreateUnauthorizedResult();
         }
 
-        try
-        {
-            return Ok(await wordLearningService.GetLevelWordsAsync(
-                userId.Value,
-                levelId,
-                cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
+        return Ok(await wordLearningService.GetLevelWordsAsync(
+            userId.Value,
+            levelId,
+            cancellationToken));
     }
 
     [HttpPost("{levelId:int}/words/mark-learned")]
@@ -74,18 +66,11 @@ public class LevelsController(
             return CreateUnauthorizedResult();
         }
 
-        try
-        {
-            return Ok(await wordLearningService.MarkLevelWordsLearnedAsync(
-                userId.Value,
-                levelId,
-                request,
-                cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
+        return Ok(await wordLearningService.MarkLevelWordsLearnedAsync(
+            userId.Value,
+            levelId,
+            request,
+            cancellationToken));
     }
 
     [HttpGet("{levelId:int}/session")]
@@ -99,17 +84,10 @@ public class LevelsController(
             return CreateUnauthorizedResult();
         }
 
-        try
-        {
-            return Ok(await learningService.GetLevelSessionAsync(
-                userId.Value,
-                levelId,
-                cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
+        return Ok(await learningService.GetLevelSessionAsync(
+            userId.Value,
+            levelId,
+            cancellationToken));
     }
 
     [HttpPost("{levelId:int}/complete")]
@@ -124,18 +102,11 @@ public class LevelsController(
             return CreateUnauthorizedResult();
         }
 
-        try
-        {
-            return Ok(await learningService.CompleteLevelAsync(
-                userId.Value,
-                levelId,
-                request,
-                cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
+        return Ok(await learningService.CompleteLevelAsync(
+            userId.Value,
+            levelId,
+            request,
+            cancellationToken));
     }
 
     private Guid? GetCurrentUserId()
@@ -152,12 +123,4 @@ public class LevelsController(
         new(new ErrorResponse(new ErrorDetails(
             "unauthorized",
             "Authentication is required")));
-
-    private ObjectResult ToErrorResult(ApiException exception) =>
-        StatusCode(
-            exception.StatusCode,
-            new ErrorResponse(new ErrorDetails(
-                exception.Code,
-                exception.Message,
-                exception.Details)));
 }

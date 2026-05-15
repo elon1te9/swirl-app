@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Swirl.Api.Interfaces;
 using Swirl.Api.Requests;
 using Swirl.Api.Responses;
-using Swirl.Api.Services;
 
 namespace Swirl.Api.Controllers;
 
@@ -17,32 +16,14 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<AuthResponse>> Register(
         RegisterRequest request,
         CancellationToken cancellationToken)
-    {
-        try
-        {
-            return Ok(await authService.RegisterAsync(request, cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
-    }
+        => Ok(await authService.RegisterAsync(request, cancellationToken));
 
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> Login(
         LoginRequest request,
         CancellationToken cancellationToken)
-    {
-        try
-        {
-            return Ok(await authService.LoginAsync(request, cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
-    }
+        => Ok(await authService.LoginAsync(request, cancellationToken));
 
     [HttpGet("me")]
     [Authorize]
@@ -76,12 +57,4 @@ public class AuthController(IAuthService authService) : ControllerBase
             ? userId
             : null;
     }
-
-    private ObjectResult ToErrorResult(ApiException exception) =>
-        StatusCode(
-            exception.StatusCode,
-            new ErrorResponse(new ErrorDetails(
-                exception.Code,
-                exception.Message,
-                exception.Details)));
 }

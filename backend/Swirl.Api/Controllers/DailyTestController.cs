@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Swirl.Api.Interfaces;
 using Swirl.Api.Requests;
 using Swirl.Api.Responses;
-using Swirl.Api.Services;
 
 namespace Swirl.Api.Controllers;
 
@@ -36,17 +35,10 @@ public class DailyTestController(IDailyTestService dailyTestService) : Controlle
             return CreateUnauthorizedResult();
         }
 
-        try
-        {
-            return Ok(await dailyTestService.CompleteDailyTestAsync(
-                userId.Value,
-                request,
-                cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
+        return Ok(await dailyTestService.CompleteDailyTestAsync(
+            userId.Value,
+            request,
+            cancellationToken));
     }
 
     private Guid? GetCurrentUserId()
@@ -63,12 +55,4 @@ public class DailyTestController(IDailyTestService dailyTestService) : Controlle
         new(new ErrorResponse(new ErrorDetails(
             "unauthorized",
             "Authentication is required")));
-
-    private ObjectResult ToErrorResult(ApiException exception) =>
-        StatusCode(
-            exception.StatusCode,
-            new ErrorResponse(new ErrorDetails(
-                exception.Code,
-                exception.Message,
-                exception.Details)));
 }

@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +28,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
         var details = context.ModelState
             .Where(entry => entry.Value?.Errors.Count > 0)
             .ToDictionary(
-                entry => ToCamelCase(entry.Key),
+                entry => ToCamelCaseModelStateKey(entry.Key),
                 entry => entry.Value!.Errors
                     .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
                         ? "Invalid value"
@@ -105,6 +106,15 @@ builder.Services
                 await context.Response.WriteAsJsonAsync(new ErrorResponse(new ErrorDetails(
                     "unauthorized",
                     "Authentication is required")));
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsJsonAsync(new ErrorResponse(new ErrorDetails(
+                    "forbidden",
+                    "You do not have access to this resource")));
             }
         };
     });
@@ -150,6 +160,38 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        var logger = context.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("ApiExceptionHandler");
+
+        var (statusCode, error) = exception switch
+        {
+            ApiException apiException => (
+                apiException.StatusCode,
+                new ErrorDetails(apiException.Code, apiException.Message, apiException.Details)),
+            _ => (
+                StatusCodes.Status500InternalServerError,
+                new ErrorDetails("internal_error", "Something went wrong"))
+        };
+
+        if (exception is not null and not ApiException)
+        {
+            logger.LogError(exception, "Unhandled API exception.");
+        }
+
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsJsonAsync(new ErrorResponse(error));
+    });
+});
+
+Directory.CreateDirectory(mediaRootPath);
 app.UseHttpsRedirection();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -162,6 +204,22 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static string ToCamelCaseModelStateKey(string value) =>
+    string.Join('.', value
+        .Split('.', StringSplitOptions.RemoveEmptyEntries)
+        .Select(ToCamelCaseModelStateSegment));
+
+static string ToCamelCaseModelStateSegment(string value)
+{
+    var bracketIndex = value.IndexOf('[');
+    if (bracketIndex < 0)
+    {
+        return ToCamelCase(value);
+    }
+
+    return ToCamelCase(value[..bracketIndex]) + value[bracketIndex..];
+}
 
 static string ToCamelCase(string value) =>
     string.IsNullOrWhiteSpace(value)

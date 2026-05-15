@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Swirl.Api.Interfaces;
 using Swirl.Api.Requests;
 using Swirl.Api.Responses;
-using Swirl.Api.Services;
 
 namespace Swirl.Api.Controllers;
 
@@ -48,14 +47,7 @@ public class ProfileController(IProfileService profileService) : ControllerBase
                 "Authentication is required")));
         }
 
-        try
-        {
-            return Ok(await profileService.ChangeAvatarAsync(userId.Value, request, cancellationToken));
-        }
-        catch (ApiException exception)
-        {
-            return ToErrorResult(exception);
-        }
+        return Ok(await profileService.ChangeAvatarAsync(userId.Value, request, cancellationToken));
     }
 
     private Guid? GetCurrentUserId()
@@ -67,12 +59,4 @@ public class ProfileController(IProfileService profileService) : ControllerBase
             ? userId
             : null;
     }
-
-    private ObjectResult ToErrorResult(ApiException exception) =>
-        StatusCode(
-            exception.StatusCode,
-            new ErrorResponse(new ErrorDetails(
-                exception.Code,
-                exception.Message,
-                exception.Details)));
 }
