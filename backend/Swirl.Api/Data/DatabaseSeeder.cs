@@ -5,10 +5,10 @@ namespace Swirl.Api.Data;
 
 public static class DatabaseSeeder
 {
-    private const string DefaultCefrLevel = "A1";
     private const int NormalLevelsPerSection = 5;
     private const int FinalTestLevelNumber = NormalLevelsPerSection + 1;
-    private const int SeededNormalLevelsPerSection = 2;
+    private const int NormalLevelExerciseCount = 20;
+    private const int FinalTestExerciseCount = 30;
 
     private static readonly string[] ExerciseTypes =
     [
@@ -54,8 +54,7 @@ public static class DatabaseSeeder
         {
             new AvatarSeed("Avatar 1", "/media/avatars/avatar_1.png"),
             new AvatarSeed("Avatar 2", "/media/avatars/avatar_2.png"),
-            new AvatarSeed("Avatar 3", "/media/avatars/avatar_3.png"),
-            new AvatarSeed("Avatar 4", "/media/avatars/avatar_4.png")
+            new AvatarSeed("Avatar 3", "/media/avatars/avatar_3.png")
         };
         var avatarImageUrls = avatars.Select(avatar => avatar.ImageUrl).ToArray();
 
@@ -142,16 +141,16 @@ public static class DatabaseSeeder
                 var title = isFinalTest
                     ? $"{section.Title} Final Test"
                     : $"{section.Title} Level {levelNumber}";
-
                 var description = isFinalTest
-                    ? $"Final test for {section.Title} section"
-                    : $"Level {levelNumber} for {section.Title} section";
+                    ? $"Final test for {section.Title} words from levels 1-5"
+                    : GetLevelDescription(section.Title, levelNumber);
+                var cefrLevel = GetLevelCefrLevel(levelNumber);
 
                 if (existingLevels.TryGetValue(levelNumber, out var existingLevel))
                 {
                     existingLevel.Title = title;
                     existingLevel.Description = description;
-                    existingLevel.CefrLevel = DefaultCefrLevel;
+                    existingLevel.CefrLevel = cefrLevel;
                     existingLevel.IsFinalTest = isFinalTest;
                     existingLevel.SortOrder = levelNumber;
                     existingLevel.IsActive = true;
@@ -165,7 +164,7 @@ public static class DatabaseSeeder
                     Title = title,
                     Description = description,
                     LevelNumber = levelNumber,
-                    CefrLevel = DefaultCefrLevel,
+                    CefrLevel = cefrLevel,
                     IsFinalTest = isFinalTest,
                     SortOrder = levelNumber,
                     IsActive = true,
@@ -189,29 +188,42 @@ public static class DatabaseSeeder
         var levels = await dbContext.Levels
             .Include(level => level.Section)
             .Where(level =>
-                sectionTitles.Contains(level.Section.Title) &&
-                level.LevelNumber <= SeededNormalLevelsPerSection &&
-                !level.IsFinalTest)
+                sectionTitles.Contains(level.Section.Title)
+                && level.LevelNumber <= NormalLevelsPerSection
+                && !level.IsFinalTest)
             .ToListAsync(cancellationToken);
 
         var existingWords = await dbContext.Words
             .Include(word => word.Level)
             .ThenInclude(level => level.Section)
             .Where(word =>
-                sectionTitles.Contains(word.Level.Section.Title) &&
-                word.Level.LevelNumber <= SeededNormalLevelsPerSection)
+                sectionTitles.Contains(word.Level.Section.Title)
+                && word.Level.LevelNumber <= NormalLevelsPerSection)
             .ToDictionaryAsync(word => CreateWordKey(
                 word.Level.Section.Title,
                 word.Level.LevelNumber,
                 word.English), cancellationToken);
+        var seededWordKeys = wordSeeds
+            .Select(word => CreateWordKey(word.SectionTitle, word.LevelNumber, word.English))
+            .ToHashSet();
+
+        foreach (var existingWord in existingWords)
+        {
+            if (seededWordKeys.Contains(existingWord.Key))
+            {
+                continue;
+            }
+
+            dbContext.Words.Remove(existingWord.Value);
+        }
 
         foreach (var wordSeed in wordSeeds)
         {
             var level = levels.Single(level =>
-                level.Section.Title == wordSeed.SectionTitle &&
-                level.LevelNumber == wordSeed.LevelNumber);
-
+                level.Section.Title == wordSeed.SectionTitle
+                && level.LevelNumber == wordSeed.LevelNumber);
             var wordKey = CreateWordKey(wordSeed.SectionTitle, wordSeed.LevelNumber, wordSeed.English);
+
             if (existingWords.TryGetValue(wordKey, out var existingWord))
             {
                 existingWord.Russian = wordSeed.Russian;
@@ -219,7 +231,7 @@ public static class DatabaseSeeder
                 existingWord.PartOfSpeech = wordSeed.PartOfSpeech;
                 existingWord.ImageUrl = wordSeed.ImageUrl;
                 existingWord.AudioUrl = wordSeed.AudioUrl;
-                existingWord.CefrLevel = DefaultCefrLevel;
+                existingWord.CefrLevel = wordSeed.CefrLevel;
                 existingWord.IsActive = true;
                 existingWord.UpdatedAt = now;
                 continue;
@@ -234,7 +246,7 @@ public static class DatabaseSeeder
                 PartOfSpeech = wordSeed.PartOfSpeech,
                 ImageUrl = wordSeed.ImageUrl,
                 AudioUrl = wordSeed.AudioUrl,
-                CefrLevel = DefaultCefrLevel,
+                CefrLevel = wordSeed.CefrLevel,
                 IsActive = true,
                 CreatedAt = now
             });
@@ -253,10 +265,23 @@ public static class DatabaseSeeder
             .ToArray();
 
         var existingExercises = await dbContext.Exercises
-            .Where(exercise => seededLevelIds.Contains(exercise.LevelId))
+            .Where(exercise => seededLevelIds.Contains(exercise.LevelId) && exercise.SortOrder.HasValue)
             .ToDictionaryAsync(
-                exercise => CreateExerciseKey(exercise.LevelId, exercise.SortOrder),
+                exercise => CreateExerciseKey(exercise.LevelId, exercise.SortOrder!.Value),
                 cancellationToken);
+        var seededExerciseKeys = exerciseSeeds
+            .Select(exercise => CreateExerciseKey(exercise.LevelId, exercise.SortOrder))
+            .ToHashSet();
+
+        foreach (var existingExercise in existingExercises)
+        {
+            if (seededExerciseKeys.Contains(existingExercise.Key))
+            {
+                continue;
+            }
+
+            dbContext.Exercises.Remove(existingExercise.Value);
+        }
 
         foreach (var exerciseSeed in exerciseSeeds)
         {
@@ -311,15 +336,27 @@ public static class DatabaseSeeder
         foreach (var exercise in choiceExercises)
         {
             var optionTexts = CreateOptionTexts(exercise, sectionWords);
-            var existingOptions = exercise.ExerciseOptions
-                .Where(option => option.SortOrder.HasValue)
-                .GroupBy(option => option.SortOrder)
-                .ToDictionary(group => group.Key!.Value, group => group.First());
+            var optionsToRemove = exercise.ExerciseOptions
+                .Where(option =>
+                    option.SortOrder is null or < 1 or > 4
+                    || option.SortOrder > optionTexts.Length)
+                .ToList();
 
-            foreach (var extraOption in exercise.ExerciseOptions.Where(option =>
-                option.SortOrder is null or < 1 or > 4))
+            dbContext.ExerciseOptions.RemoveRange(optionsToRemove);
+
+            var existingOptions = exercise.ExerciseOptions
+                .Except(optionsToRemove)
+                .Where(option => option.SortOrder.HasValue)
+                .GroupBy(option => option.SortOrder!.Value)
+                .ToDictionary(group => group.Key, group => group.First());
+
+            foreach (var duplicateOption in exercise.ExerciseOptions
+                .Except(optionsToRemove)
+                .Where(option => option.SortOrder.HasValue)
+                .GroupBy(option => option.SortOrder!.Value)
+                .SelectMany(group => group.Skip(1)))
             {
-                dbContext.ExerciseOptions.Remove(extraOption);
+                dbContext.ExerciseOptions.Remove(duplicateOption);
             }
 
             for (var index = 0; index < optionTexts.Length; index++)
@@ -371,9 +408,9 @@ public static class DatabaseSeeder
         {
             var normalLevels = levels
                 .Where(level =>
-                    level.Section.Title == section.Title &&
-                    level.LevelNumber <= SeededNormalLevelsPerSection &&
-                    !level.IsFinalTest)
+                    level.Section.Title == section.Title
+                    && level.LevelNumber <= NormalLevelsPerSection
+                    && !level.IsFinalTest)
                 .OrderBy(level => level.LevelNumber)
                 .ToArray();
 
@@ -384,49 +421,63 @@ public static class DatabaseSeeder
                     .OrderBy(word => word.Id)
                     .ToArray();
 
-                exerciseSeeds.AddRange(CreateExercisesForLevel(level.Id, levelWords));
+                exerciseSeeds.AddRange(CreateExercisesForLevel(
+                    level.Id,
+                    levelWords,
+                    NormalLevelExerciseCount));
             }
 
             var finalTestLevel = levels.Single(level =>
-                level.Section.Title == section.Title &&
-                level.IsFinalTest);
-
+                level.Section.Title == section.Title
+                && level.IsFinalTest);
             var sectionWords = words
                 .Where(word =>
-                    word.Level.Section.Title == section.Title &&
-                    !word.Level.IsFinalTest)
+                    word.Level.Section.Title == section.Title
+                    && !word.Level.IsFinalTest)
                 .OrderBy(word => word.Level.LevelNumber)
                 .ThenBy(word => word.Id)
-                .Take(ExerciseTypes.Length)
                 .ToArray();
 
-            exerciseSeeds.AddRange(CreateExercisesForLevel(finalTestLevel.Id, sectionWords));
+            exerciseSeeds.AddRange(CreateExercisesForLevel(
+                finalTestLevel.Id,
+                SelectFinalTestWords(sectionWords),
+                FinalTestExerciseCount));
         }
 
         return exerciseSeeds;
     }
 
-    private static ExerciseSeed[] CreateExercisesForLevel(int levelId, Word[] words)
+    private static ExerciseSeed[] CreateExercisesForLevel(
+        int levelId,
+        Word[] words,
+        int exerciseCount)
     {
-        if (words.Length < ExerciseTypes.Length)
+        if (words.Length == 0)
         {
-            words = [.. words, words[0]];
+            return [];
         }
 
-        return ExerciseTypes
-            .Select((type, index) =>
+        return Enumerable.Range(1, exerciseCount)
+            .Select(sortOrder =>
             {
-                var word = words[index % words.Length];
+                var word = words[(sortOrder - 1) % words.Length];
+                var type = ExerciseTypes[(sortOrder - 1) % ExerciseTypes.Length];
+
                 return new ExerciseSeed(
                     levelId,
                     word.Id,
                     type,
                     CreateQuestionText(type, word),
                     CreateCorrectAnswer(type, word),
-                    index + 1);
+                    sortOrder);
             })
             .ToArray();
     }
+
+    private static Word[] SelectFinalTestWords(Word[] sectionWords) =>
+        Enumerable.Range(0, FinalTestExerciseCount)
+            .Select(index => sectionWords[(index * 7) % sectionWords.Length])
+            .ToArray();
 
     private static string? CreateQuestionText(string type, Word word) =>
         type switch
@@ -452,76 +503,276 @@ public static class DatabaseSeeder
     private static string[] CreateOptionTexts(Exercise exercise, List<Word> sectionWords)
     {
         var usesRussianOptions = exercise.Type is "english_to_russian_choice" or "audio_to_russian_choice";
+        var correctAnswer = exercise.CorrectAnswer;
         var incorrectOptions = sectionWords
             .Where(word => word.Level.SectionId == exercise.Word.Level.SectionId && word.Id != exercise.WordId)
-            .OrderBy(word => word.Id)
+            .OrderBy(word => Math.Abs(word.Level.LevelNumber - exercise.Word.Level.LevelNumber))
+            .ThenBy(word => word.Level.LevelNumber)
+            .ThenBy(word => word.Id)
             .Select(word => usesRussianOptions ? word.Russian : word.English)
+            .Where(option => !string.Equals(option, correctAnswer, StringComparison.OrdinalIgnoreCase))
             .Distinct()
             .Take(3)
             .ToArray();
 
-        return [exercise.CorrectAnswer, .. incorrectOptions];
+        return [correctAnswer, .. incorrectOptions];
     }
 
     private static SectionSeed[] GetSectionSeeds() =>
     [
-        new("Food", "Words about food and drinks", "/media/images/sections/food.png", 1),
-        new("Science", "Words about science and discovery", "/media/images/sections/science.png", 2),
-        new("Health", "Words about health and wellbeing", "/media/images/sections/health.png", 3),
-        new("Wardrobe", "Words about clothes and wardrobe", "/media/images/sections/wardrobe.png", 4)
+        new("Food", "Words about food, drinks, cooking, taste, and nutrition", "/media/images/sections/food.png", 1),
+        new("Science", "Words about science, nature, laboratory work, and research", "/media/images/sections/science.png", 2),
+        new("Health", "Words about the body, symptoms, medicine, and healthy habits", "/media/images/sections/health.png", 3),
+        new("Wardrobe", "Words about clothes, shoes, accessories, materials, and style", "/media/images/sections/wardrobe.png", 4)
     ];
 
     private static WordSeed[] GetWordSeeds() =>
     [
-        new("Food", 1, "apple", "яблоко", "[ap-l]", "noun"),
-        new("Food", 1, "bread", "хлеб", "[bred]", "noun"),
-        new("Food", 1, "milk", "молоко", "[milk]", "noun"),
-        new("Food", 1, "water", "вода", "[wo-ter]", "noun"),
-        new("Food", 1, "cheese", "сыр", "[cheez]", "noun"),
-        new("Food", 2, "egg", "яйцо", "[eg]", "noun"),
-        new("Food", 2, "rice", "рис", "[rais]", "noun"),
-        new("Food", 2, "soup", "суп", "[soop]", "noun"),
-        new("Food", 2, "tea", "чай", "[tee]", "noun"),
-        new("Food", 2, "meat", "мясо", "[meet]", "noun"),
+        new("Food", 1, "apple", "яблоко", "/ˈæpəl/", "noun"),
+        new("Food", 1, "bread", "хлеб", "/bred/", "noun"),
+        new("Food", 1, "milk", "молоко", "/mɪlk/", "noun"),
+        new("Food", 1, "water", "вода", "/ˈwɔːtər/", "noun"),
+        new("Food", 1, "cheese", "сыр", "/tʃiːz/", "noun"),
+        new("Food", 1, "egg", "яйцо", "/eɡ/", "noun"),
+        new("Food", 1, "meat", "мясо", "/miːt/", "noun"),
+        new("Food", 1, "fish", "рыба", "/fɪʃ/", "noun"),
+        new("Food", 1, "tea", "чай", "/tiː/", "noun"),
+        new("Food", 1, "juice", "сок", "/dʒuːs/", "noun"),
+        new("Food", 2, "banana", "банан", "/bəˈnænə/", "noun"),
+        new("Food", 2, "orange", "апельсин", "/ˈɔːrɪndʒ/", "noun"),
+        new("Food", 2, "potato", "картофель", "/pəˈteɪtoʊ/", "noun"),
+        new("Food", 2, "tomato", "помидор", "/təˈmeɪtoʊ/", "noun"),
+        new("Food", 2, "carrot", "морковь", "/ˈkærət/", "noun"),
+        new("Food", 2, "onion", "лук", "/ˈʌnjən/", "noun"),
+        new("Food", 2, "rice", "рис", "/raɪs/", "noun"),
+        new("Food", 2, "butter", "масло", "/ˈbʌtər/", "noun"),
+        new("Food", 2, "sugar", "сахар", "/ˈʃʊɡər/", "noun"),
+        new("Food", 2, "salt", "соль", "/sɔːlt/", "noun"),
+        new("Food", 3, "soup", "суп", "/suːp/", "noun"),
+        new("Food", 3, "salad", "салат", "/ˈsæləd/", "noun"),
+        new("Food", 3, "breakfast", "завтрак", "/ˈbrekfəst/", "noun"),
+        new("Food", 3, "dinner", "ужин", "/ˈdɪnər/", "noun"),
+        new("Food", 3, "recipe", "рецепт", "/ˈresəpi/", "noun"),
+        new("Food", 3, "cook", "готовить", "/kʊk/", "verb"),
+        new("Food", 3, "boil", "кипятить", "/bɔɪl/", "verb"),
+        new("Food", 3, "bake", "печь", "/beɪk/", "verb"),
+        new("Food", 3, "fry", "жарить", "/fraɪ/", "verb"),
+        new("Food", 3, "slice", "нарезать", "/slaɪs/", "verb"),
+        new("Food", 4, "sweet", "сладкий", "/swiːt/", "adjective"),
+        new("Food", 4, "sour", "кислый", "/ˈsaʊər/", "adjective"),
+        new("Food", 4, "spicy", "острый", "/ˈspaɪsi/", "adjective"),
+        new("Food", 4, "fresh", "свежий", "/freʃ/", "adjective"),
+        new("Food", 4, "tasty", "вкусный", "/ˈteɪsti/", "adjective"),
+        new("Food", 4, "kitchen", "кухня", "/ˈkɪtʃən/", "noun"),
+        new("Food", 4, "meal", "трапеза", "/miːl/", "noun"),
+        new("Food", 4, "diet", "рацион", "/ˈdaɪət/", "noun"),
+        new("Food", 4, "healthy", "полезный", "/ˈhelθi/", "adjective"),
+        new("Food", 4, "flavor", "вкус", "/ˈfleɪvər/", "noun"),
+        new("Food", 5, "appetite", "аппетит", "/ˈæpɪtaɪt/", "noun"),
+        new("Food", 5, "ingredient", "ингредиент", "/ɪnˈɡriːdiənt/", "noun"),
+        new("Food", 5, "nutrition", "питание", "/nuːˈtrɪʃən/", "noun"),
+        new("Food", 5, "beverage", "напиток", "/ˈbevərɪdʒ/", "noun"),
+        new("Food", 5, "dessert", "десерт", "/dɪˈzɜːrt/", "noun"),
+        new("Food", 5, "cuisine", "кулинария", "/kwɪˈziːn/", "noun"),
+        new("Food", 5, "portion", "порция", "/ˈpɔːrʃən/", "noun"),
+        new("Food", 5, "roast", "запекать", "/roʊst/", "verb"),
+        new("Food", 5, "seasoning", "приправа", "/ˈsiːzənɪŋ/", "noun"),
+        new("Food", 5, "leftover", "остаток", "/ˈleftoʊvər/", "noun"),
 
-        new("Science", 1, "sun", "солнце", "[sun]", "noun"),
-        new("Science", 1, "moon", "луна", "[moon]", "noun"),
-        new("Science", 1, "star", "звезда", "[star]", "noun"),
-        new("Science", 1, "planet", "планета", "[plan-it]", "noun"),
-        new("Science", 1, "light", "свет", "[lait]", "noun"),
-        new("Science", 2, "atom", "атом", "[at-um]", "noun"),
-        new("Science", 2, "cell", "клетка", "[sel]", "noun"),
-        new("Science", 2, "energy", "энергия", "[en-er-jee]", "noun"),
-        new("Science", 2, "force", "сила", "[fors]", "noun"),
-        new("Science", 2, "metal", "металл", "[met-l]", "noun"),
+        new("Science", 1, "sun", "солнце", "/sʌn/", "noun"),
+        new("Science", 1, "moon", "луна", "/muːn/", "noun"),
+        new("Science", 1, "star", "звезда", "/stɑːr/", "noun"),
+        new("Science", 1, "planet", "планета", "/ˈplænɪt/", "noun"),
+        new("Science", 1, "light", "свет", "/laɪt/", "noun"),
+        new("Science", 1, "air", "воздух", "/er/", "noun"),
+        new("Science", 1, "earth", "земля", "/ɜːrθ/", "noun"),
+        new("Science", 1, "water", "вода", "/ˈwɔːtər/", "noun"),
+        new("Science", 1, "plant", "растение", "/plænt/", "noun"),
+        new("Science", 1, "animal", "животное", "/ˈænɪməl/", "noun"),
+        new("Science", 2, "nature", "природа", "/ˈneɪtʃər/", "noun"),
+        new("Science", 2, "weather", "погода", "/ˈweðər/", "noun"),
+        new("Science", 2, "temperature", "температура", "/ˈtemprətʃər/", "noun"),
+        new("Science", 2, "measure", "измерять", "/ˈmeʒər/", "verb"),
+        new("Science", 2, "weight", "вес", "/weɪt/", "noun"),
+        new("Science", 2, "length", "длина", "/leŋθ/", "noun"),
+        new("Science", 2, "speed", "скорость", "/spiːd/", "noun"),
+        new("Science", 2, "energy", "энергия", "/ˈenərdʒi/", "noun"),
+        new("Science", 2, "force", "сила", "/fɔːrs/", "noun"),
+        new("Science", 2, "heat", "тепло", "/hiːt/", "noun"),
+        new("Science", 3, "laboratory", "лаборатория", "/ˈlæbrətɔːri/", "noun"),
+        new("Science", 3, "experiment", "эксперимент", "/ɪkˈsperɪmənt/", "noun"),
+        new("Science", 3, "sample", "образец", "/ˈsæmpəl/", "noun"),
+        new("Science", 3, "material", "материал", "/məˈtɪriəl/", "noun"),
+        new("Science", 3, "metal", "металл", "/ˈmetəl/", "noun"),
+        new("Science", 3, "glass", "стекло", "/ɡlæs/", "noun"),
+        new("Science", 3, "liquid", "жидкость", "/ˈlɪkwɪd/", "noun"),
+        new("Science", 3, "crystal", "кристалл", "/ˈkrɪstəl/", "noun"),
+        new("Science", 3, "chemical", "химикат", "/ˈkemɪkəl/", "noun"),
+        new("Science", 3, "observe", "наблюдать", "/əbˈzɜːrv/", "verb"),
+        new("Science", 4, "atom", "атом", "/ˈætəm/", "noun"),
+        new("Science", 4, "cell", "клетка", "/sel/", "noun"),
+        new("Science", 4, "gene", "ген", "/dʒiːn/", "noun"),
+        new("Science", 4, "gravity", "гравитация", "/ˈɡrævəti/", "noun"),
+        new("Science", 4, "molecule", "молекула", "/ˈmɑːlɪkjuːl/", "noun"),
+        new("Science", 4, "reaction", "реакция", "/riˈækʃən/", "noun"),
+        new("Science", 4, "oxygen", "кислород", "/ˈɑːksɪdʒən/", "noun"),
+        new("Science", 4, "carbon", "углерод", "/ˈkɑːrbən/", "noun"),
+        new("Science", 4, "species", "вид", "/ˈspiːʃiːz/", "noun"),
+        new("Science", 4, "evolve", "эволюционировать", "/ɪˈvɑːlv/", "verb"),
+        new("Science", 5, "hypothesis", "гипотеза", "/haɪˈpɑːθəsɪs/", "noun"),
+        new("Science", 5, "evidence", "доказательство", "/ˈevɪdəns/", "noun"),
+        new("Science", 5, "research", "исследование", "/rɪˈsɜːrtʃ/", "noun"),
+        new("Science", 5, "analysis", "анализ", "/əˈnæləsɪs/", "noun"),
+        new("Science", 5, "microscope", "микроскоп", "/ˈmaɪkrəskoʊp/", "noun"),
+        new("Science", 5, "radiation", "излучение", "/ˌreɪdiˈeɪʃən/", "noun"),
+        new("Science", 5, "ecosystem", "экосистема", "/ˈiːkoʊsɪstəm/", "noun"),
+        new("Science", 5, "biodiversity", "биоразнообразие", "/ˌbaɪoʊdaɪˈvɜːrsəti/", "noun"),
+        new("Science", 5, "compound", "соединение", "/ˈkɑːmpaʊnd/", "noun"),
+        new("Science", 5, "particle", "частица", "/ˈpɑːrtɪkəl/", "noun"),
 
-        new("Health", 1, "doctor", "врач", "[dok-ter]", "noun"),
-        new("Health", 1, "nurse", "медсестра", "[nurs]", "noun"),
-        new("Health", 1, "hospital", "больница", "[hos-pi-tl]", "noun"),
-        new("Health", 1, "medicine", "лекарство", "[med-i-sin]", "noun"),
-        new("Health", 1, "pain", "боль", "[pain]", "noun"),
-        new("Health", 2, "tooth", "зуб", "[tooth]", "noun"),
-        new("Health", 2, "heart", "сердце", "[hart]", "noun"),
-        new("Health", 2, "sleep", "сон", "[sleep]", "noun"),
-        new("Health", 2, "fever", "температура", "[fee-ver]", "noun"),
-        new("Health", 2, "cough", "кашель", "[kof]", "noun"),
+        new("Health", 1, "head", "голова", "/hed/", "noun"),
+        new("Health", 1, "hand", "рука", "/hænd/", "noun"),
+        new("Health", 1, "leg", "нога", "/leɡ/", "noun"),
+        new("Health", 1, "eye", "глаз", "/aɪ/", "noun"),
+        new("Health", 1, "ear", "ухо", "/ɪr/", "noun"),
+        new("Health", 1, "heart", "сердце", "/hɑːrt/", "noun"),
+        new("Health", 1, "doctor", "врач", "/ˈdɑːktər/", "noun"),
+        new("Health", 1, "nurse", "медсестра", "/nɜːrs/", "noun"),
+        new("Health", 1, "healthy", "здоровый", "/ˈhelθi/", "adjective"),
+        new("Health", 1, "sick", "больной", "/sɪk/", "adjective"),
+        new("Health", 2, "pain", "боль", "/peɪn/", "noun"),
+        new("Health", 2, "cough", "кашель", "/kɔːf/", "noun"),
+        new("Health", 2, "fever", "температура", "/ˈfiːvər/", "noun"),
+        new("Health", 2, "cold", "простуда", "/koʊld/", "noun"),
+        new("Health", 2, "tired", "уставший", "/ˈtaɪərd/", "adjective"),
+        new("Health", 2, "sleep", "спать", "/sliːp/", "verb"),
+        new("Health", 2, "rest", "отдыхать", "/rest/", "verb"),
+        new("Health", 2, "hurt", "болеть", "/hɜːrt/", "verb"),
+        new("Health", 2, "wash", "мыть", "/wɑːʃ/", "verb"),
+        new("Health", 2, "breathe", "дышать", "/briːð/", "verb"),
+        new("Health", 3, "hospital", "больница", "/ˈhɑːspɪtəl/", "noun"),
+        new("Health", 3, "medicine", "лекарство", "/ˈmedɪsən/", "noun"),
+        new("Health", 3, "patient", "пациент", "/ˈpeɪʃənt/", "noun"),
+        new("Health", 3, "clinic", "клиника", "/ˈklɪnɪk/", "noun"),
+        new("Health", 3, "dentist", "стоматолог", "/ˈdentɪst/", "noun"),
+        new("Health", 3, "checkup", "осмотр", "/ˈtʃekʌp/", "noun"),
+        new("Health", 3, "bandage", "бинт", "/ˈbændɪdʒ/", "noun"),
+        new("Health", 3, "injection", "укол", "/ɪnˈdʒekʃən/", "noun"),
+        new("Health", 3, "prescription", "рецепт", "/prɪˈskrɪpʃən/", "noun"),
+        new("Health", 3, "examine", "осматривать", "/ɪɡˈzæmɪn/", "verb"),
+        new("Health", 4, "treatment", "лечение", "/ˈtriːtmənt/", "noun"),
+        new("Health", 4, "prevent", "предотвращать", "/prɪˈvent/", "verb"),
+        new("Health", 4, "recover", "выздоравливать", "/rɪˈkʌvər/", "verb"),
+        new("Health", 4, "vaccine", "вакцина", "/vækˈsiːn/", "noun"),
+        new("Health", 4, "vitamin", "витамин", "/ˈvaɪtəmɪn/", "noun"),
+        new("Health", 4, "exercise", "упражнение", "/ˈeksərsaɪz/", "noun"),
+        new("Health", 4, "hygiene", "гигиена", "/ˈhaɪdʒiːn/", "noun"),
+        new("Health", 4, "allergy", "аллергия", "/ˈælərdʒi/", "noun"),
+        new("Health", 4, "therapy", "терапия", "/ˈθerəpi/", "noun"),
+        new("Health", 4, "heal", "исцелять", "/hiːl/", "verb"),
+        new("Health", 5, "diagnosis", "диагноз", "/ˌdaɪəɡˈnoʊsɪs/", "noun"),
+        new("Health", 5, "symptom", "симптом", "/ˈsɪmptəm/", "noun"),
+        new("Health", 5, "infection", "инфекция", "/ɪnˈfekʃən/", "noun"),
+        new("Health", 5, "immune", "иммунный", "/ɪˈmjuːn/", "adjective"),
+        new("Health", 5, "pressure", "давление", "/ˈpreʃər/", "noun"),
+        new("Health", 5, "nutrition", "питание", "/nuːˈtrɪʃən/", "noun"),
+        new("Health", 5, "mental", "психический", "/ˈmentəl/", "adjective"),
+        new("Health", 5, "chronic", "хронический", "/ˈkrɑːnɪk/", "adjective"),
+        new("Health", 5, "trauma", "травма", "/ˈtraʊmə/", "noun"),
+        new("Health", 5, "rehabilitation", "реабилитация", "/ˌriːhəˌbɪlɪˈteɪʃən/", "noun"),
 
-        new("Wardrobe", 1, "shirt", "рубашка", "[shurt]", "noun"),
-        new("Wardrobe", 1, "dress", "платье", "[dres]", "noun"),
-        new("Wardrobe", 1, "shoes", "обувь", "[shooz]", "noun"),
-        new("Wardrobe", 1, "coat", "пальто", "[koht]", "noun"),
-        new("Wardrobe", 1, "hat", "шляпа", "[hat]", "noun"),
-        new("Wardrobe", 2, "socks", "носки", "[soks]", "noun"),
-        new("Wardrobe", 2, "skirt", "юбка", "[skurt]", "noun"),
-        new("Wardrobe", 2, "jacket", "куртка", "[jak-it]", "noun"),
-        new("Wardrobe", 2, "trousers", "брюки", "[trau-zers]", "noun"),
-        new("Wardrobe", 2, "scarf", "шарф", "[skarf]", "noun")
+        new("Wardrobe", 1, "shirt", "рубашка", "/ʃɜːrt/", "noun"),
+        new("Wardrobe", 1, "dress", "платье", "/dres/", "noun"),
+        new("Wardrobe", 1, "coat", "пальто", "/koʊt/", "noun"),
+        new("Wardrobe", 1, "hat", "шляпа", "/hæt/", "noun"),
+        new("Wardrobe", 1, "pants", "брюки", "/pænts/", "noun"),
+        new("Wardrobe", 1, "skirt", "юбка", "/skɜːrt/", "noun"),
+        new("Wardrobe", 1, "socks", "носки", "/sɑːks/", "noun"),
+        new("Wardrobe", 1, "jacket", "куртка", "/ˈdʒækɪt/", "noun"),
+        new("Wardrobe", 1, "sweater", "свитер", "/ˈswetər/", "noun"),
+        new("Wardrobe", 1, "jeans", "джинсы", "/dʒiːnz/", "noun"),
+        new("Wardrobe", 2, "shoes", "туфли", "/ʃuːz/", "noun"),
+        new("Wardrobe", 2, "boots", "ботинки", "/buːts/", "noun"),
+        new("Wardrobe", 2, "sneakers", "кроссовки", "/ˈsniːkərz/", "noun"),
+        new("Wardrobe", 2, "belt", "ремень", "/belt/", "noun"),
+        new("Wardrobe", 2, "bag", "сумка", "/bæɡ/", "noun"),
+        new("Wardrobe", 2, "watch", "часы", "/wɑːtʃ/", "noun"),
+        new("Wardrobe", 2, "gloves", "перчатки", "/ɡlʌvz/", "noun"),
+        new("Wardrobe", 2, "scarf", "шарф", "/skɑːrf/", "noun"),
+        new("Wardrobe", 2, "cap", "кепка", "/kæp/", "noun"),
+        new("Wardrobe", 2, "ring", "кольцо", "/rɪŋ/", "noun"),
+        new("Wardrobe", 3, "cotton", "хлопок", "/ˈkɑːtən/", "noun"),
+        new("Wardrobe", 3, "wool", "шерсть", "/wʊl/", "noun"),
+        new("Wardrobe", 3, "leather", "кожа", "/ˈleðər/", "noun"),
+        new("Wardrobe", 3, "silk", "шелк", "/sɪlk/", "noun"),
+        new("Wardrobe", 3, "denim", "деним", "/ˈdenɪm/", "noun"),
+        new("Wardrobe", 3, "loose", "свободный", "/luːs/", "adjective"),
+        new("Wardrobe", 3, "tight", "тесный", "/taɪt/", "adjective"),
+        new("Wardrobe", 3, "casual", "повседневный", "/ˈkæʒuəl/", "adjective"),
+        new("Wardrobe", 3, "formal", "официальный", "/ˈfɔːrməl/", "adjective"),
+        new("Wardrobe", 3, "pattern", "узор", "/ˈpætərn/", "noun"),
+        new("Wardrobe", 4, "uniform", "форма", "/ˈjuːnɪfɔːrm/", "noun"),
+        new("Wardrobe", 4, "suit", "костюм", "/suːt/", "noun"),
+        new("Wardrobe", 4, "tie", "галстук", "/taɪ/", "noun"),
+        new("Wardrobe", 4, "raincoat", "плащ", "/ˈreɪnkoʊt/", "noun"),
+        new("Wardrobe", 4, "swimsuit", "купальник", "/ˈswɪmsuːt/", "noun"),
+        new("Wardrobe", 4, "pajamas", "пижама", "/pəˈdʒɑːməz/", "noun"),
+        new("Wardrobe", 4, "outfit", "наряд", "/ˈaʊtfɪt/", "noun"),
+        new("Wardrobe", 4, "change", "переодеваться", "/tʃeɪndʒ/", "verb"),
+        new("Wardrobe", 4, "match", "сочетаться", "/mætʃ/", "verb"),
+        new("Wardrobe", 4, "elegant", "элегантный", "/ˈelɪɡənt/", "adjective"),
+        new("Wardrobe", 5, "wardrobe", "гардероб", "/ˈwɔːrdroʊb/", "noun"),
+        new("Wardrobe", 5, "fashion", "мода", "/ˈfæʃən/", "noun"),
+        new("Wardrobe", 5, "style", "стиль", "/staɪl/", "noun"),
+        new("Wardrobe", 5, "accessory", "аксессуар", "/əkˈsesəri/", "noun"),
+        new("Wardrobe", 5, "fabric", "ткань", "/ˈfæbrɪk/", "noun"),
+        new("Wardrobe", 5, "seam", "шов", "/siːm/", "noun"),
+        new("Wardrobe", 5, "sleeve", "рукав", "/sliːv/", "noun"),
+        new("Wardrobe", 5, "collar", "воротник", "/ˈkɑːlər/", "noun"),
+        new("Wardrobe", 5, "tailor", "портной", "/ˈteɪlər/", "noun"),
+        new("Wardrobe", 5, "alter", "перешивать", "/ˈɔːltər/", "verb")
     ];
+
+    private static string GetLevelCefrLevel(int levelNumber) =>
+        levelNumber switch
+        {
+            1 or 2 => "A1",
+            3 => "A2",
+            4 => "A2/B1",
+            5 => "B1/B2",
+            _ => "mixed"
+        };
+
+    private static string GetLevelDescription(string sectionTitle, int levelNumber) =>
+        (sectionTitle, levelNumber) switch
+        {
+            ("Food", 1) => "Simple food and drink words",
+            ("Food", 2) => "Fruit, vegetables, and basic products",
+            ("Food", 3) => "Dishes and cooking actions",
+            ("Food", 4) => "Taste, kitchen, and nutrition words",
+            ("Food", 5) => "More advanced food vocabulary",
+            ("Science", 1) => "Simple science words",
+            ("Science", 2) => "Nature, weather, and measurements",
+            ("Science", 3) => "Laboratory and material words",
+            ("Science", 4) => "Physics, chemistry, and biology words",
+            ("Science", 5) => "More advanced science terms",
+            ("Health", 1) => "Body and basic health words",
+            ("Health", 2) => "Symptoms and simple health actions",
+            ("Health", 3) => "Medicine, doctors, and clinics",
+            ("Health", 4) => "Treatment and prevention words",
+            ("Health", 5) => "More advanced health vocabulary",
+            ("Wardrobe", 1) => "Basic clothing words",
+            ("Wardrobe", 2) => "Shoes and accessories",
+            ("Wardrobe", 3) => "Materials and styles",
+            ("Wardrobe", 4) => "Clothes for different situations",
+            ("Wardrobe", 5) => "More advanced fashion and clothing vocabulary",
+            _ => $"Level {levelNumber} for {sectionTitle} section"
+        };
 
     private static string CreateWordKey(string sectionTitle, int levelNumber, string english) =>
         $"{sectionTitle}|{levelNumber}|{english}".ToLowerInvariant();
 
-    private static string CreateExerciseKey(int levelId, int? sortOrder) =>
+    private static string CreateExerciseKey(int levelId, int sortOrder) =>
         $"{levelId}|{sortOrder}";
 
     private static DateTime CreateTimestamp() =>
@@ -539,9 +790,14 @@ public static class DatabaseSeeder
         string Transcription,
         string PartOfSpeech)
     {
-        public string ImageUrl => $"/media/images/words/{English}.png";
+        public string CefrLevel => GetLevelCefrLevel(LevelNumber);
 
-        public string AudioUrl => $"/media/audio/words/{English}.mp3";
+        public string ImageUrl => $"/media/images/words/{CreateSlug(SectionTitle)}/{CreateSlug(English)}.png";
+
+        public string AudioUrl => $"/media/audio/words/{CreateSlug(SectionTitle)}/{CreateSlug(English)}.mp3";
+
+        private static string CreateSlug(string value) =>
+            value.ToLowerInvariant().Replace(' ', '-');
     }
 
     private sealed record ExerciseSeed(
