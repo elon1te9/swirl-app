@@ -13,6 +13,7 @@ Before making Flutter changes, read:
 - `../docs/07_DAILY_TEST_AND_STREAK.md`
 - `../docs/09_ERROR_HANDLING.md`
 - `../docs/12_FLUTTER_TASKS.md`
+- `../docs/15_FLUTTER_IMPLEMENTATION_PLAN.md`
 
 ## Flutter stack
 

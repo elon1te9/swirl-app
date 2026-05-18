@@ -20,6 +20,10 @@ Before implementing Flutter tasks, read:
 - `docs/09_ERROR_HANDLING.md`
 - `docs/13_UI_UX_GUIDE.md`
 
+For a detailed frontend implementation plan based on the current backend, also read:
+
+- `docs/15_FLUTTER_IMPLEMENTATION_PLAN.md`
+
 ## Flutter stack
 
 Use:

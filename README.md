@@ -58,7 +58,8 @@ Recommended reading order:
 13. `docs/12_FLUTTER_TASKS.md` — Flutter implementation stages
 14. `docs/13_UI_UX_GUIDE.md` — UI/UX design guide
 15. `docs/14_OPEN_QUESTIONS.md` — open product and technical questions
-16. `docs/DECISIONS.md` — confirmed project decisions
+16. `docs/15_FLUTTER_IMPLEMENTATION_PLAN.md` — detailed Flutter implementation plan based on docs and current backend
+17. `docs/DECISIONS.md` — confirmed project decisions
 
 ## MVP constraints
 
