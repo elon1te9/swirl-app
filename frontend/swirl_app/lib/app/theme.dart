@@ -9,6 +9,11 @@ class AppTheme {
   static const Color _surface = Color(0xFFFFFFFF);
   static const Color _text = Color(0xFF263238);
 
+  static const Color _redColor = Color.fromRGBO(215, 38, 61, 1);
+  static const Color _purpleColor = Color.fromRGBO(111, 115, 210, 1);
+  static const Color _darkColor = Color(0xFF263238);
+
+
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: _primary,
