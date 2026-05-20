@@ -276,137 +276,146 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-Widget sectionCard({
-  required String title,
-  required String levels,
-  required String progressText,
-  required double progressValue,
-  required Color backgroundColor,
-  required Color textColor,
-  required Color progressColor,
-  required Color progressBgColor,
-  required String imagePath,
-}) {
-  return Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Image.asset(imagePath, height: 60,),
-
-          const SizedBox(height: 12),
-          
-          Text(
-            title,
-            style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          
-          Text(
-            levels,
-            style: TextStyle(color: textColor, fontSize: 11),
-          ),
-          const SizedBox(height: 12),
-          
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progressValue,
-              backgroundColor: progressBgColor,
-              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              minHeight: 6,
-            ),
-          ),
-          const SizedBox(height: 4),
-          
-          Text(
-            progressText,
-            style: TextStyle(color: textColor, fontSize: 10),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget sectionsPanel() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Разделы',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+  Widget sectionCard({
+    required String title,
+    required String levels,
+    required String progressText,
+    required double progressValue,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color progressColor,
+    required Color progressBgColor,
+    required String imagePath,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(16),
         ),
-        const SizedBox(height: 12),
-        
-        Row(
+        child: Column(
           children: [
-            sectionCard(
-              title: 'Food',
-              levels: '5 уровней',
-              progressText: '1/5',
-              progressValue: 1 / 5,
-              backgroundColor: Color.fromRGBO(215, 38, 61, 1),
-              textColor: Colors.white,
-              progressColor: Color.fromRGBO(151, 219, 255, 1),
-              progressBgColor: Color.fromRGBO(255, 255, 255, 0.5),
-              imagePath: 'images/sections/food.png',
+            Image.asset(imagePath, height: 60),
+
+            const SizedBox(height: 12),
+
+            Text(
+              title,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(width: 10),
-            
-            sectionCard(
-              title: 'Science',
-              levels: '5 уровней',
-              progressText: '0/5',
-              progressValue: 0.0,
-              backgroundColor: Color.fromRGBO(215, 38, 61, 1),
-              textColor: Colors.white,
-              progressColor: Color.fromRGBO(151, 219, 255, 1),
-              progressBgColor: Color.fromRGBO(255, 255, 255, 0.5),
-              imagePath: 'images/sections/food.png',
+
+            Text(levels, style: TextStyle(color: textColor, fontSize: 11)),
+            const SizedBox(height: 12),
+
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progressValue,
+                backgroundColor: progressBgColor,
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                minHeight: 6,
+              ),
             ),
-            const SizedBox(width: 10),
-            
-            sectionCard(
-              title: 'Health',
-              levels: '5 уровней',
-              progressText: '0/5',
-              progressValue: 0.0,
-              backgroundColor: Color.fromRGBO(215, 38, 61, 1),
-              textColor: Colors.white,
-              progressColor: Color.fromRGBO(151, 219, 255, 1),
-              progressBgColor: Color.fromRGBO(255, 255, 255, 0.5),
-              imagePath: 'images/sections/food.png',
+            const SizedBox(height: 4),
+
+            Text(
+              progressText,
+              style: TextStyle(color: textColor, fontSize: 10),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {},
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Все разделы ',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
-                Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 12),
-              ],
+      ),
+    );
+  }
+
+  Widget sectionsPanel() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Разделы',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              sectionCard(
+                title: 'Food',
+                levels: '5 уровней',
+                progressText: '1/5',
+                progressValue: 1 / 5,
+                backgroundColor: Color.fromRGBO(215, 38, 61, 1),
+                textColor: Colors.white,
+                progressColor: Color.fromRGBO(151, 219, 255, 1),
+                progressBgColor: Color.fromRGBO(255, 255, 255, 0.5),
+                imagePath: 'images/sections/food.png',
+              ),
+              const SizedBox(width: 10),
+
+              sectionCard(
+                title: 'Science',
+                levels: '5 уровней',
+                progressText: '0/5',
+                progressValue: 0.0,
+                backgroundColor: Color.fromRGBO(215, 38, 61, 1),
+                textColor: Colors.white,
+                progressColor: Color.fromRGBO(151, 219, 255, 1),
+                progressBgColor: Color.fromRGBO(255, 255, 255, 0.5),
+                imagePath: 'images/sections/food.png',
+              ),
+              const SizedBox(width: 10),
+
+              sectionCard(
+                title: 'Health',
+                levels: '5 уровней',
+                progressText: '0/5',
+                progressValue: 0.0,
+                backgroundColor: Color.fromRGBO(215, 38, 61, 1),
+                textColor: Colors.white,
+                progressColor: Color.fromRGBO(151, 219, 255, 1),
+                progressBgColor: Color.fromRGBO(255, 255, 255, 0.5),
+                imagePath: 'images/sections/food.png',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {},
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Все разделы ',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white70,
+                    size: 12,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -417,42 +426,53 @@ Widget sectionsPanel() {
           children: [
             userHeaderPanel(),
 
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Привет!',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                const SizedBox(height: 8),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Привет!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-                const Text(
-                  'Готов изучать новые слова?',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
+                        const Text(
+                          'Готов изучать новые слова?',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Image.asset(
+                          'images/mascot_home.png',
+                          height: 180,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    ),
+
+                    seriesPanel(),
+
+                    continueLearningPanel(),
+
+                    sectionsPanel(),
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Image.asset(
-                  'images/mascot_home.png',
-                  height: 180,
-                  fit: BoxFit.contain,
-                ),
-              ],
+              ),
             ),
-
-            seriesPanel(),
-
-            continueLearningPanel(),
-
-            sectionsPanel()
           ],
         ),
       ),

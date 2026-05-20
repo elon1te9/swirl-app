@@ -15,7 +15,7 @@ import '../presentation/screens/tasks_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.login,
     routes: [
       GoRoute(
         path: AppRoutes.splash,
