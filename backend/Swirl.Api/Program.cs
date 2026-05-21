@@ -196,7 +196,11 @@ app.UseExceptionHandler(errorApp =>
 });
 
 Directory.CreateDirectory(mediaRootPath);
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(mediaRootPath),

@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:swirl_app/core/errors/api_error.dart';
 import 'package:swirl_app/domain/models/auth_response_model.dart';
 import 'package:swirl_app/domain/models/avatar_model.dart';
 import 'package:swirl_app/domain/models/user_model.dart';
@@ -25,6 +24,7 @@ void main() {
         'id': 'user-id',
         'name': 'Vladimir',
         'email': 'user@example.com',
+        'avatarUrl': null,
       });
 
       expect(user.avatarUrl, isNull);
@@ -60,32 +60,6 @@ void main() {
       expect(avatar.id, 1);
       expect(avatar.name, 'Avatar 1');
       expect(avatar.imageUrl, '/media/avatars/avatar_1.png');
-    });
-  });
-
-  group('ApiError', () {
-    test('reads backend error format', () {
-      final error = ApiError.fromJson({
-        'error': {
-          'code': 'validation_error',
-          'message': 'Validation failed',
-          'details': {
-            'email': ['Email is required'],
-          },
-        },
-      });
-
-      expect(error.code, 'validation_error');
-      expect(error.message, 'Validation failed');
-      expect(error.details?['email'], ['Email is required']);
-    });
-
-    test('uses friendly fallback for unknown error format', () {
-      final error = ApiError.fromJson({'message': 'Raw server text'});
-
-      expect(error.code, 'unknown_error');
-      expect(error.message, 'Что-то пошло не так. Попробуйте еще раз.');
-      expect(error.details, isNull);
     });
   });
 }

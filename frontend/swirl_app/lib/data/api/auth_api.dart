@@ -1,39 +1,49 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/api_client.dart';
 import '../../domain/models/auth_response_model.dart';
 import '../../domain/models/avatar_model.dart';
 import '../../domain/models/user_model.dart';
 import 'api_paths.dart';
 
-class AuthApi {
-  AuthApi(this._dio);
+final authApiProvider = Provider<AuthApi>((ref) {
+  final dio = ref.watch(dioProvider);
+  return AuthApi(dio);
+});
 
-  final Dio _dio;
+class AuthApi {
+  AuthApi(this.dio);
+
+  final Dio dio;
 
   Future<List<AvatarModel>> getAvatars() async {
-    final response = await _dio.get(ApiPaths.avatars);
-    final data = response.data;
+    final response = await dio.get(ApiPaths.avatars);
+    final List avatarsJson = response.data;
 
-    if (data is! List) {
-      return [];
-    }
+    final avatars = avatarsJson.map((avatarJson) {
+      return AvatarModel.fromJson(avatarJson);
+    }).toList();
 
-    return data
-        .whereType<Map>()
-        .map((item) => AvatarModel.fromJson(Map<String, dynamic>.from(item)))
-        .toList();
+    return avatars;
   }
 
   Future<AuthResponseModel> login({
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post(
+    final response = await dio.post(
       ApiPaths.authLogin,
-      data: {'email': email, 'password': password},
+      data: {
+        'email': email,
+        'password': password,
+      },
     );
 
-    return AuthResponseModel.fromJson(_jsonMap(response.data));
+    final Map<String, dynamic> responseJson = response.data;
+    final authResponse = AuthResponseModel.fromJson(responseJson);
+
+    return authResponse;
   }
 
   Future<AuthResponseModel> register({
@@ -43,7 +53,7 @@ class AuthApi {
     required String confirmPassword,
     required int avatarId,
   }) async {
-    final response = await _dio.post(
+    final response = await dio.post(
       ApiPaths.authRegister,
       data: {
         'name': name,
@@ -54,20 +64,17 @@ class AuthApi {
       },
     );
 
-    return AuthResponseModel.fromJson(_jsonMap(response.data));
+    final Map<String, dynamic> responseJson = response.data;
+    final authResponse = AuthResponseModel.fromJson(responseJson);
+
+    return authResponse;
   }
 
   Future<UserModel> me() async {
-    final response = await _dio.get(ApiPaths.authMe);
+    final response = await dio.get(ApiPaths.authMe);
+    final Map<String, dynamic> userJson = response.data;
+    final user = UserModel.fromJson(userJson);
 
-    return UserModel.fromJson(_jsonMap(response.data));
-  }
-
-  Map<String, dynamic> _jsonMap(Object? data) {
-    if (data is Map) {
-      return Map<String, dynamic>.from(data);
-    }
-
-    return {};
+    return user;
   }
 }

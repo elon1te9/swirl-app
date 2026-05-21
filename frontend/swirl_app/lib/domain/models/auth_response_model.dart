@@ -7,13 +7,12 @@ class AuthResponseModel {
   final UserModel user;
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
-    final userJson = json['user'];
+    final Map<String, dynamic> userJson = json['user'];
+    final user = UserModel.fromJson(userJson);
 
     return AuthResponseModel(
-      accessToken: json['accessToken']?.toString() ?? '',
-      user: UserModel.fromJson(
-        userJson is Map ? Map<String, dynamic>.from(userJson) : {},
-      ),
+      accessToken: json['accessToken'],
+      user: user,
     );
   }
 }

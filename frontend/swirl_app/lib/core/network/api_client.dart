@@ -46,7 +46,7 @@ class ApiClient {
 
   static const backendOrigin = String.fromEnvironment(
     'SWIRL_BACKEND_ORIGIN',
-    defaultValue: 'http://10.0.2.2:5000',
+    defaultValue: 'http://10.0.2.2:5122',
   );
 
   static const apiBaseUrl = '$backendOrigin/api';

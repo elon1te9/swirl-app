@@ -14,7 +14,7 @@ void main() {
         onRequest: (options, handler) {
           onRequest(options);
 
-          Object? responseData;
+          Object responseData;
           if (options.path == ApiPaths.avatars) {
             responseData = [
               {
