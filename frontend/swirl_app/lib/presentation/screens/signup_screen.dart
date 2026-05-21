@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
-import '../widgets/screen_placeholder.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -194,4 +193,3 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
-

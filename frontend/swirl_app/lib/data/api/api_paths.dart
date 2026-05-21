@@ -15,8 +15,7 @@ class ApiPaths {
 
   static String levelWords(int levelId) => '/levels/$levelId/words';
 
-  static String markLevelWordsLearned(int levelId) =>
-      '/levels/$levelId/words/mark-learned';
+  static String markLevelWordsLearned(int levelId) => '/levels/$levelId/words/mark-learned';
 
   static String levelSession(int levelId) => '/levels/$levelId/session';
 

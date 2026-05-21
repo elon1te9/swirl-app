@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:swirl_app/app/theme.dart';
-
-import '../../app/router.dart';
-import '../widgets/screen_placeholder.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
