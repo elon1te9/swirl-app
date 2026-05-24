@@ -1,80 +1,259 @@
-# swirl
+# SwirlApp
 
-swirl is an Android application for Russian-speaking beginners who learn English words through thematic sections, levels, exercises, daily tests, progress, and streaks.
+SwirlApp — учебный fullstack-проект для изучения английских слов русскоязычными начинающими пользователями.
 
-## Tech stack
+Проект состоит из backend API на ASP.NET Core и мобильного Flutter-клиента. Планируемый основной сценарий приложения: регистрация пользователя, выбор тематического раздела, прохождение уровней со словами и упражнениями, сохранение прогресса, ежедневный тест и серия занятий.
+
+## Статус проекта
+
+Проект находится в разработке и не готов для использования как завершённый продукт.
+
+На текущем этапе backend в основном реализован: в нём есть ключевые API-модули, миграции Entity Framework Core, seed-данные, JWT-аутентификация и логика обучения. Flutter-клиент реализован частично и ещё интегрируется с API: уже есть навигация, экраны авторизации и базовая работа с backend, но часть экранов обучения и прогресса пока остаётся в разработке или представлена как заготовки.
+
+## Ограничения текущей версии
+
+- Flutter-клиент ещё не полностью интегрирован с backend API;
+- часть клиентских экранов пока использует статические данные или заготовки;
+- полноценный набор автотестов не настроен: в репозитории есть отдельные Flutter-тесты, но backend-тестов пока нет;
+- Docker и CI/CD не настроены;
+- проект не готов для production-использования.
+
+## Основной функционал, который уже реализован
 
 Backend:
 
-- ASP.NET Core Web API
-- .NET 8
-- PostgreSQL
-- Entity Framework Core
-- JWT Bearer Authentication
-- Swagger / OpenAPI
+- регистрация и вход пользователя;
+- JWT-аутентификация;
+- получение текущего пользователя;
+- работа с профилем и выбором аватара;
+- список тематических разделов;
+- уровни внутри разделов и пользовательские статусы уровней;
+- получение слов уровня;
+- отметка слов как изученных;
+- получение тренировочной сессии уровня;
+- завершение уровня с сохранением попытки и ответов;
+- логика открытия следующих уровней;
+- ежедневный тест по изученным словам;
+- обновление серии занятий;
+- единый формат ошибок API;
+- Swagger/OpenAPI в development-режиме;
+- раздача статических медиафайлов из `wwwroot/media`;
+- начальная загрузка данных через seed.
+
+Flutter-клиент:
+
+- стартовый экран;
+- экраны регистрации и входа;
+- сохранение JWT-токена в secure storage;
+- API-клиент на Dio;
+- базовая маршрутизация через GoRouter;
+- экраны home/profile/sections/level map/learning/tasks/daily test;
+- часть экранов обучения пока используется как заготовка для дальнейшей интеграции с backend.
+
+## Функционал в разработке / планы
+
+- завершить интеграцию Flutter-экранов разделов, уровней, слов и упражнений с API;
+- заменить оставшиеся статические данные на данные backend;
+- улучшить состояние загрузки, ошибок и пустых состояний в клиенте;
+- доработать пользовательский сценарий ежедневного теста;
+- добавить больше проверок для edge cases в backend;
+- расширить тестовое покрытие;
+- подготовить более удобную локальную конфигурацию для разных окружений.
+
+## Технологический стек
+
+Backend:
+
+- C#;
+- .NET 8;
+- ASP.NET Core Web API;
+- Entity Framework Core;
+- PostgreSQL;
+- JWT Bearer Authentication;
+- Swagger / OpenAPI;
+- Npgsql.
 
 Frontend:
 
-- Flutter
-- Dart
-- Android
+- Flutter;
+- Dart;
+- Dio;
+- GoRouter;
+- Riverpod;
+- flutter_secure_storage;
+- Android.
 
-## Main MVP features
+## Архитектура проекта
 
-- registration
-- login
-- JWT authentication
-- profile
-- avatar selection
-- home page
-- sections
-- level map
-- word learning
-- exercises
-- level completion
-- user progress
-- daily test
-- streak
-- backend media storage
+Backend построен как REST API с разделением ответственности по слоям:
 
-## Documentation
+- `Controllers` принимают HTTP-запросы и возвращают DTO;
+- `Services` содержат бизнес-логику;
+- `Interfaces` описывают контракты сервисов;
+- `Models` содержат EF Core-сущности;
+- `Requests` и `Responses` содержат DTO для API;
+- `Data` содержит `AppDbContext`, настройки EF Core и seed-логику;
+- `Migrations` содержит миграции базы данных.
 
-Project documentation is stored in `/docs`.
+Пользовательские API-маршруты защищены JWT, кроме регистрации, входа, списка аватаров и статических медиафайлов. Контроллеры не возвращают EF Core-сущности напрямую.
 
-Recommended reading order:
+Flutter-клиент разделён на:
 
-1. `docs/00_PROJECT_OVERVIEW.md` — product overview and MVP scope
-2. `docs/01_BACKEND_ARCHITECTURE.md` — ASP.NET Core API architecture
-3. `docs/02_DATABASE_SCHEMA.md` — PostgreSQL database schema
-4. `docs/03_API_CONTRACT.md` — REST API endpoints and request/response contracts
-5. `docs/04_AUTH_AND_SECURITY.md` — authentication and security rules
-6. `docs/05_FRONTEND_ARCHITECTURE.md` — Flutter app architecture
-7. `docs/06_LEARNING_LOGIC.md` — levels, exercises, progress, and word learning logic
-8. `docs/07_DAILY_TEST_AND_STREAK.md` — daily test and streak logic
-9. `docs/08_SEED_DATA.md` — MVP seed content rules
-10. `docs/09_ERROR_HANDLING.md` — API error format and error handling rules
-11. `docs/10_CODE_STYLE.md` — backend and general code style
-12. `docs/11_BACKEND_TASKS.md` — backend implementation stages
-13. `docs/12_FLUTTER_TASKS.md` — Flutter implementation stages
-14. `docs/13_UI_UX_GUIDE.md` — UI/UX design guide
-15. `docs/14_OPEN_QUESTIONS.md` — open product and technical questions
-16. `docs/15_FLUTTER_IMPLEMENTATION_PLAN.md` — detailed Flutter implementation plan based on docs and current backend
-17. `docs/DECISIONS.md` — confirmed project decisions
+- `app` - роутинг, тема и корневой виджет приложения;
+- `core` - сетевой клиент, хранение токена и общие утилиты;
+- `data` - API-клиенты;
+- `domain` - модели приложения;
+- `presentation` - экраны, виджеты и состояние UI.
 
-## MVP constraints
+## Структура проекта
 
-The MVP does not include:
+```text
+Swirl/
+  backend/
+    Swirl.Api/
+      Controllers/
+      Data/
+      Interfaces/
+      Migrations/
+      Models/
+      Requests/
+      Responses/
+      Services/
+      wwwroot/media/
+      Program.cs
+      appsettings.json
+  frontend/
+    swirl_app/
+      android/
+      lib/
+      test/
+      pubspec.yaml
+  docs/
+  tools/
+  Swirl.sln
+  README.md
+```
 
-- iOS
-- web version
-- monetization
-- subscriptions
-- ads
-- push notifications
-- email confirmation
-- admin panel UI
-- leaderboard
-- achievements
-- dark theme
-- advanced analytics
-- offline-first mode
+## Установка и запуск backend
+
+Требования:
+
+- .NET 8 SDK;
+- PostgreSQL;
+- установленный `dotnet-ef` при работе с миграциями.
+
+1. Перейти в папку backend-проекта:
+
+```bash
+cd backend/Swirl.Api
+```
+
+2. Подготовить локальную конфигурацию подключения к PostgreSQL и JWT. Пример структуры:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=swirl_db;Username=YOUR_USER;Password=YOUR_PASSWORD"
+  },
+  "Jwt": {
+    "Issuer": "Swirl.Api",
+    "Audience": "Swirl.Android",
+    "AccessTokenMinutes": 60,
+    "Secret": "YOUR_LONG_LOCAL_DEVELOPMENT_SECRET"
+  },
+  "Cors": {
+    "AllowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:8080",
+      "http://10.0.2.2:8080"
+    ]
+  },
+  "Media": {
+    "RootPath": "wwwroot/media",
+    "RequestPath": "/media"
+  }
+}
+```
+
+Для локальных секретов можно использовать переменные окружения:
+
+```env
+ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=swirl_db;Username=YOUR_USER;Password=YOUR_PASSWORD
+Jwt__Secret=YOUR_LONG_LOCAL_DEVELOPMENT_SECRET
+```
+
+3. Восстановить зависимости:
+
+```bash
+dotnet restore
+```
+
+4. Применить миграции:
+
+```bash
+dotnet ef database update
+```
+
+5. Запустить API:
+
+```bash
+dotnet run
+```
+
+Swagger UI доступен в development-режиме по адресу, который выводится в консоли при запуске приложения.
+
+## Установка и запуск Flutter-клиента
+
+Требования:
+
+- Flutter SDK;
+- Android Studio или другой настроенный Android-эмулятор/устройство.
+
+1. Перейти в папку Flutter-приложения:
+
+```bash
+cd frontend/swirl_app
+```
+
+2. Установить зависимости:
+
+```bash
+flutter pub get
+```
+
+3. Проверить адрес backend API в `lib/core/network/api_client.dart`.
+
+Для Android-эмулятора backend на локальной машине обычно доступен через:
+
+```text
+http://10.0.2.2:5122/api
+```
+
+4. Запустить приложение:
+
+```bash
+flutter run
+```
+
+## Что я изучаю в процессе
+
+- проектирование REST API на ASP.NET Core;
+- работу с Entity Framework Core и PostgreSQL;
+- миграции и настройку связей между сущностями;
+- JWT-аутентификацию и защиту пользовательских API-маршрутов;
+- разделение backend-кода на контроллеры, сервисы, интерфейсы и DTO;
+- seed-данные для учебного приложения;
+- интеграцию Flutter-клиента с backend API;
+- хранение токена на клиенте;
+- маршрутизацию и состояние во Flutter;
+- построение fullstack-проекта от базы данных до мобильного интерфейса.
+
+## Возможные улучшения
+
+- добавить backend-тесты для сервисов и ключевой бизнес-логики;
+- расширить Flutter-тесты для пользовательских сценариев;
+- вынести адрес API и окружения Flutter в более гибкую конфигурацию;
+- улучшить обработку ошибок на клиенте;
+- добавить повторную проверку и полировку API-контрактов;
+- улучшить документацию по ручной проверке основных сценариев.
