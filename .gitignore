@@ -24,6 +24,10 @@ $RECYCLE.BIN/
 *.rsuser
 *.DotSettings.user
 
+# Local agent instructions and docs drafts
+AGENTS.md
+docs/
+
 # .NET / ASP.NET Core
 [Bb]in/
 [Oo]bj/
