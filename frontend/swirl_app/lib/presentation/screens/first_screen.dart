@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/widget_previews.dart';
 
 import '../../app/router.dart';
 
@@ -9,6 +10,7 @@ class FirstScreen extends StatelessWidget {
   static const Color _skyColor = Color(0xFF97DBFF);
   static const Color _purpleColor = Color(0xFF6F73D2);
   static const Color _buttonTextColor = Color(0xFF27233A);
+
 
   @override
   Widget build(BuildContext context) {
