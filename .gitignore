@@ -26,7 +26,8 @@ $RECYCLE.BIN/
 
 # Local agent instructions and docs drafts
 AGENTS.md
-docs/
+docs/*
+!docs/17_FLUTTER_SIMPLE_ARCHITECTURE.md
 
 # .NET / ASP.NET Core
 [Bb]in/

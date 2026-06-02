@@ -1,17 +1,45 @@
-# swirl_app
+# Swirl Flutter app
 
-A new Flutter project.
+This folder contains the Android Flutter client for Swirl.
 
-## Getting Started
+## Architecture
 
-This project is a starting point for a Flutter application.
+Use the simple MVP flow:
 
-A few resources to get you started if this is your first Flutter project:
+```text
+Screen -> Controller -> Api/Storage
+Api -> Dio request
+Model -> parses JSON
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Riverpod is used mostly for dependency providers such as Dio, API classes,
+token storage, and controllers. Keep form fields, loading flags, selected ids,
+and error text inside `StatefulWidget` screens when that keeps the code easier
+to read.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Run
+
+Install dependencies:
+
+```bash
+flutter pub get
+```
+
+Run on Android emulator with the local backend:
+
+```bash
+flutter run --dart-define=SWIRL_BACKEND_ORIGIN=http://10.0.2.2:5122
+```
+
+Run checks:
+
+```bash
+flutter analyze
+flutter test
+```
+
+## Auth note
+
+Stage 2 registration does not show avatar selection. The app sends a random
+predefined `avatarId` during registration, and the user can change avatar later
+from profile/settings.

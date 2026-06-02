@@ -9,8 +9,8 @@ class DailyTestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ScreenPlaceholder(
-      title: 'Дневной тест',
-      description: 'Здесь позже появится повторение изученных слов за день.',
+      title: 'Ночнной тест',
+      description: 'Здесь позже появится повторение слов за день.',
       actions: [PlaceholderAction(label: 'На главную', route: AppRoutes.home)],
     );
   }

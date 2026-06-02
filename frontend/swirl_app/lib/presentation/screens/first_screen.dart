@@ -1,20 +1,139 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
-import '../widgets/screen_placeholder.dart';
 
 class FirstScreen extends StatelessWidget {
   const FirstScreen({super.key});
 
+  static const _blue = Color(0xFF97DBFF);
+  static const _purple = Color(0xFF6F73D2);
+  static const _darkText = Color(0xFF27233A);
+
   @override
   Widget build(BuildContext context) {
-    return const ScreenPlaceholder(
-      title: 'Добро пожаловать',
-      description: 'Первый экран перед входом или регистрацией.',
-      actions: [
-        PlaceholderAction(label: 'Войти', route: AppRoutes.login),
-        PlaceholderAction(label: 'Зарегистрироваться', route: AppRoutes.signup),
-      ],
+    return Scaffold(
+      backgroundColor: _blue,
+      body: Stack(
+        children: [
+          ClipPath(
+            clipper: _FirstScreenBlobClipper(),
+            child: Container(
+              height: MediaQuery.sizeOf(context).height * 0.64,
+              color: _purple,
+            ),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: Column(
+                    children: [
+                      SizedBox(height: constraints.maxHeight * 0.14),
+                      const SizedBox(
+                        width: double.infinity,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'swirl.',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 96,
+                              fontWeight: FontWeight.w900,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: FilledButton(
+                          onPressed: () => context.go(AppRoutes.login),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: _darkText,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          child: const Text('Войти'),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          const Text(
+                            'Нет аккаунта? ',
+                            style: TextStyle(
+                              color: _purple,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => context.go(AppRoutes.signup),
+                            child: const Text(
+                              'Зарегистрироваться',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: constraints.maxHeight * 0.14),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+class _FirstScreenBlobClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(0, size.height * 0.54)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height * 0.56,
+        size.width * 0.18,
+        size.height * 0.84,
+        size.width * 0.38,
+        size.height * 0.92,
+      )
+      ..cubicTo(
+        size.width * 0.62,
+        size.height * 1.02,
+        size.width * 0.82,
+        size.height * 0.82,
+        size.width,
+        size.height * 0.66,
+      )
+      ..lineTo(size.width, 0)
+      ..close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
