@@ -27,6 +27,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat.ttf
+
   assets:
     - images/mascot_home.png
     - images/sections/

@@ -41,6 +41,27 @@ public class ProfileController : ControllerBase
         return Ok(profile);
     }
 
+    [HttpPut]
+    public async Task<ActionResult<ProfileResponse>> UpdateProfile(
+        UpdateProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized(new ErrorResponse(new ErrorDetails(
+                "unauthorized",
+                "Authentication is required")));
+        }
+
+        var result = await _profileService.UpdateProfileAsync(
+            userId.Value,
+            request,
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpPut("avatar")]
     public async Task<ActionResult<ChangeAvatarResponse>> ChangeAvatar(
         ChangeAvatarRequest request,

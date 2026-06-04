@@ -136,6 +136,60 @@ public class ProfileService : IProfileService
         };
     }
 
+    public async Task<ProfileResponse> UpdateProfileAsync(
+        Guid userId,
+        UpdateProfileRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var name = request.Name.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ApiException(
+                StatusCodes.Status400BadRequest,
+                "validation_error",
+                "Validation failed",
+                new Dictionary<string, string[]>
+                {
+                    ["name"] = new[] { "Name is required" }
+                });
+        }
+
+        if (request.AvatarId <= 0)
+        {
+            throw CreateInvalidAvatarException("Avatar is required");
+        }
+
+        var avatar = await _context.Avatars
+            .FirstOrDefaultAsync(
+                candidate => candidate.Id == request.AvatarId && candidate.IsActive,
+                cancellationToken);
+
+        if (avatar is null)
+        {
+            throw CreateInvalidAvatarException("Avatar must exist and be active");
+        }
+
+        var profile = await _context.UserProfiles
+            .FirstOrDefaultAsync(candidate => candidate.UserId == userId, cancellationToken);
+
+        if (profile is null)
+        {
+            throw new ApiException(
+                StatusCodes.Status404NotFound,
+                "not_found",
+                "Resource not found");
+        }
+
+        profile.Name = name;
+        profile.AvatarId = avatar.Id;
+        profile.UpdatedAt = CreateTimestamp();
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var updatedProfile = await GetProfileAsync(userId, cancellationToken);
+        return updatedProfile!;
+    }
+
     private static ApiException CreateInvalidAvatarException(string message)
     {
         return new ApiException(

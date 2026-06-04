@@ -20,6 +20,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Montserrat',
       colorScheme: colorScheme,
       scaffoldBackgroundColor: _background,
       appBarTheme: const AppBarTheme(

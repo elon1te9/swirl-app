@@ -6,6 +6,7 @@ class ApiPaths {
   static const authMe = '/auth/me';
   static const avatars = '/avatars';
   static const profile = '/profile';
+  static const profileAvatar = '/profile/avatar';
   static const sections = '/sections';
   static const dailyTest = '/daily-test';
 

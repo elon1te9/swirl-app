@@ -7,6 +7,7 @@ import '../presentation/screens/home_screen.dart';
 import '../presentation/screens/learn_word_screen.dart';
 import '../presentation/screens/level_map_screen.dart';
 import '../presentation/screens/login_screen.dart';
+import '../presentation/screens/profile_edit_screen.dart';
 import '../presentation/screens/profile_screen.dart';
 import '../presentation/screens/sections_screen.dart';
 import '../presentation/screens/signup_screen.dart';
@@ -40,6 +41,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileEdit,
+        builder: (context, state) => const ProfileEditScreen(),
       ),
       GoRoute(
         path: AppRoutes.sections,
@@ -83,6 +88,7 @@ class AppRoutes {
   static const signup = '/signup';
   static const home = '/home';
   static const profile = '/profile';
+  static const profileEdit = '/profile/edit';
   static const sections = '/sections';
   static const sectionLevels = '/sections/:sectionId/levels';
   static const levelLearn = '/levels/:levelId/learn';
