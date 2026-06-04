@@ -31,8 +31,12 @@ flutter:
     - family: Montserrat
       fonts:
         - asset: assets/fonts/Montserrat.ttf
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit.ttf
 
   assets:
     - images/mascot_home.png
+    - images/mascot_levels/
     - images/sections/
     - images/backgrounds/

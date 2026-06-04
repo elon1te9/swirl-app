@@ -10,13 +10,16 @@ class ApiPaths {
   static const sections = '/sections';
   static const dailyTest = '/daily-test';
 
+  static String sectionDetails(int sectionId) => '/sections/$sectionId';
+
   static String sectionLevels(int sectionId) => '/sections/$sectionId/levels';
 
   static String levelDetails(int levelId) => '/levels/$levelId';
 
   static String levelWords(int levelId) => '/levels/$levelId/words';
 
-  static String markLevelWordsLearned(int levelId) => '/levels/$levelId/words/mark-learned';
+  static String markLevelWordsLearned(int levelId) =>
+      '/levels/$levelId/words/mark-learned';
 
   static String levelSession(int levelId) => '/levels/$levelId/session';
 
