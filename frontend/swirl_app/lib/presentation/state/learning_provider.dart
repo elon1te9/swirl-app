@@ -6,6 +6,7 @@ import '../../data/api/level_api.dart';
 import '../../data/api/section_api.dart';
 import '../../domain/models/level_model.dart';
 import '../../domain/models/section_model.dart';
+import '../../domain/models/word_model.dart';
 
 final sectionApiProvider = Provider<SectionApi>((ref) {
   return SectionApi(ref.watch(dioProvider));
@@ -55,6 +56,25 @@ class LearningController {
   Future<LevelDetailsModel> loadLevelDetails(int levelId) async {
     try {
       return await levelApi.getLevelDetails(levelId);
+    } on DioException catch (error) {
+      throw _mapLearningError(error);
+    }
+  }
+
+  Future<List<WordModel>> loadLevelWords(int levelId) async {
+    try {
+      return await levelApi.getLevelWords(levelId);
+    } on DioException catch (error) {
+      throw _mapLearningError(error);
+    }
+  }
+
+  Future<void> markLevelWordsLearned(
+    int levelId, {
+    required List<int> wordIds,
+  }) async {
+    try {
+      await levelApi.markLevelWordsLearned(levelId, wordIds: wordIds);
     } on DioException catch (error) {
       throw _mapLearningError(error);
     }

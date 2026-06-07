@@ -59,6 +59,7 @@ class FirstScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             textStyle: const TextStyle(
+                              fontFamily: 'Montserrat',
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                             ),
@@ -74,6 +75,7 @@ class FirstScreen extends StatelessWidget {
                           const Text(
                             'Нет аккаунта? ',
                             style: TextStyle(
+                              fontFamily: 'Montserrat',
                               color: _purple,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -84,6 +86,7 @@ class FirstScreen extends StatelessWidget {
                             child: const Text(
                               'Зарегистрироваться',
                               style: TextStyle(
+                                fontFamily: 'Montserrat',
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,

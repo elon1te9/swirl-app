@@ -904,12 +904,12 @@ public static class DatabaseSeeder
 
         public string ImageUrl
         {
-            get { return $"/media/images/words/{CreateSlug(SectionTitle)}/{CreateSlug(English)}.png"; }
+            get { return $"/media/images/words/{CreateSlug(English)}.png"; }
         }
 
         public string AudioUrl
         {
-            get { return $"/media/audio/words/{CreateSlug(SectionTitle)}/{CreateSlug(English)}.mp3"; }
+            get { return $"/media/audio/words/{CreateSlug(English)}.mp3"; }
         }
 
         private static string CreateSlug(string value)
