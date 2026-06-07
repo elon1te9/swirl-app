@@ -24,10 +24,6 @@ $RECYCLE.BIN/
 *.rsuser
 *.DotSettings.user
 
-# Local agent instructions and docs drafts
-AGENTS.md
-docs/*
-!docs/17_FLUTTER_SIMPLE_ARCHITECTURE.md
 
 # .NET / ASP.NET Core
 [Bb]in/
