@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/storage/token_storage.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../data/api/auth_api.dart';
 
 final authApiProvider = Provider<AuthApi>((ref) {
@@ -32,12 +33,17 @@ class AuthController {
       await authApi.me();
       return true;
     } on DioException catch (error) {
-      if (error.response?.statusCode == 401) {
+      if (isUnauthorizedError(error)) {
         await tokenStorage.deleteAccessToken();
         return false;
       }
 
-      throw Exception('Не удалось проверить вход. Попробуйте еще раз.');
+      throw Exception(
+        friendlyDioMessage(
+          error,
+          fallback: 'Не удалось проверить вход. Попробуйте еще раз.',
+        ),
+      );
     }
   }
 
@@ -77,15 +83,20 @@ class AuthController {
 }
 
 String loginErrorText(DioException error) {
-  if (error.response?.statusCode == 401) {
+  if (error.response?.statusCode == 401 ||
+      apiErrorCode(error.response?.data) == 'invalid_credentials') {
     return 'Неверная почта или пароль.';
   }
 
-  return 'Не удалось войти. Попробуйте еще раз.';
+  return friendlyDioMessage(
+    error,
+    fallback: 'Не удалось войти. Попробуйте еще раз.',
+  );
 }
 
 String registerErrorText(DioException error) {
-  if (error.response?.statusCode == 409) {
+  if (error.response?.statusCode == 409 ||
+      apiErrorCode(error.response?.data) == 'email_already_exists') {
     return 'Пользователь с такой почтой уже есть.';
   }
 
@@ -93,5 +104,8 @@ String registerErrorText(DioException error) {
     return 'Проверьте данные формы.';
   }
 
-  return 'Не удалось зарегистрироваться. Попробуйте еще раз.';
+  return friendlyDioMessage(
+    error,
+    fallback: 'Не удалось зарегистрироваться. Попробуйте еще раз.',
+  );
 }

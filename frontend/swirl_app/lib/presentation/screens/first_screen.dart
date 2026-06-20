@@ -26,79 +26,94 @@ class FirstScreen extends StatelessWidget {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
-                  child: Column(
-                    children: [
-                      SizedBox(height: constraints.maxHeight * 0.14),
-                      const SizedBox(
-                        width: double.infinity,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'swirl.',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 96,
-                              fontWeight: FontWeight.w900,
-                              height: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: FilledButton(
-                          onPressed: () => context.go(AppRoutes.login),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: _darkText,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            textStyle: const TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          child: const Text('Войти'),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          const Text(
-                            'Нет аккаунта? ',
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              color: _purple,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => context.go(AppRoutes.signup),
-                            child: const Text(
-                              'Зарегистрироваться',
+                final isCompact = constraints.maxHeight < 620;
+                final topGap =
+                    constraints.maxHeight * (isCompact ? 0.08 : 0.14);
+                final bottomGap =
+                    constraints.maxHeight * (isCompact ? 0.07 : 0.14);
+
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(42, topGap, 42, bottomGap),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - topGap - bottomGap,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const SizedBox(
+                          width: double.infinity,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'swirl.',
                               style: TextStyle(
-                                fontFamily: 'Montserrat',
+                                fontFamily: 'Outfit',
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white,
+                                fontSize: 96,
+                                fontWeight: FontWeight.w900,
+                                height: 1,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: constraints.maxHeight * 0.14),
-                    ],
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: FilledButton(
+                                onPressed: () => context.go(AppRoutes.login),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: _darkText,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                child: const Text('Войти'),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                const Text(
+                                  'Нет аккаунта? ',
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    color: _purple,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => context.go(AppRoutes.signup),
+                                  child: const Text(
+                                    'Зарегистрироваться',
+                                    style: TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

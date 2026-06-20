@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../state/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -42,7 +43,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       }
 
       setState(() {
-        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+        _errorMessage = friendlyErrorMessage(
+          error,
+          fallback: 'Не удалось проверить вход. Попробуйте еще раз.',
+        );
       });
     }
   }

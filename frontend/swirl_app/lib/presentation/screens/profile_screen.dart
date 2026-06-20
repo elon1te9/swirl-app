@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../core/utils/media_url_builder.dart';
 import '../../domain/models/profile_model.dart';
 import '../state/profile_provider.dart';
@@ -168,7 +169,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   String _messageFromError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return friendlyErrorMessage(
+      error,
+      fallback: 'Не удалось загрузить профиль. Попробуйте еще раз.',
+    );
   }
 }
 

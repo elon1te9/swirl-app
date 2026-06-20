@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../state/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -13,18 +14,44 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  static const _designWidth = 393.0;
+  static const _designHeight = 852.0;
+  static const _keyboardVisibleBottomY = 517.0;
+  static const _backgroundColor = Color(0xFF97DBFF);
+  static const _blobColor = Color(0xFF6F73D2);
+  static const _darkColor = Color(0xFF27233A);
+  static const _softDarkColor = Color(0xCC27233A);
+  static const _linkColor = Color(0xFF6F73D2);
+  static const _placeholderColor = Color(0xB327233A);
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  double? _focusedFieldY;
 
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _emailFocusNode.addListener(() {
+      _setFocusedField(_emailFocusNode, 397);
+    });
+    _passwordFocusNode.addListener(() {
+      _setFocusedField(_passwordFocusNode, 462);
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -68,6 +95,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _backgroundColor,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Positioned.fill(
@@ -76,155 +105,281 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    32,
-                    48,
-                    32,
-                    24 + MediaQuery.viewInsetsOf(context).bottom,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight - 72,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset('images/backgrounds/logo.png', width: 90),
-                          const SizedBox(height: 72),
-                          const Text(
-                            'Авторизация',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF434A6B),
-                            ),
-                          ),
-                          const SizedBox(height: 36),
-                          _buildTextField(
-                            controller: _emailController,
-                            hint: 'Почта',
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            validator: _validateEmail,
-                          ),
-                          const SizedBox(height: 20),
-                          _buildTextField(
-                            controller: _passwordController,
-                            hint: 'Пароль',
-                            obscure: !_isPasswordVisible,
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: (_) => _isLoading ? null : _submit(),
-                            validator: _validatePassword,
-                            icon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: const Color(0xFF434A6B),
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                          if (_errorMessage != null) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              _errorMessage!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 44),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 64,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _submit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF434A6B),
-                                disabledBackgroundColor: const Color(
-                                  0xFF434A6B,
-                                ).withValues(alpha: 0.55),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox.square(
-                                      dimension: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Войти',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              const Text(
-                                'Нет аккаунта?',
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
+              final scale = _layoutScale(constraints);
+              final left = (constraints.maxWidth - _designWidth * scale) / 2;
+              final keyboardShift = _keyboardShift(
+                constraints: constraints,
+                keyboardBottom: keyboardBottom,
+                scale: scale,
+              );
+
+              return Stack(
+                children: [
+                  Form(
+                    key: _formKey,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
+                      transform: Matrix4.translationValues(
+                        0,
+                        -keyboardShift,
+                        0,
+                      ),
+                      child: SizedBox(
+                        height: constraints.maxHeight,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            _positioned(
+                              left: left,
+                              scale: scale,
+                              x: 0,
+                              y: 307,
+                              width: _designWidth,
+                              child: const Text(
+                                'Авторизация',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 18,
-                                  color: Color(0xFF434A6B),
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.w700,
+                                  color: _softDarkColor,
                                 ),
                               ),
-                              TextButton(
-                                onPressed: _isLoading
-                                    ? null
-                                    : () => context.go(AppRoutes.signup),
-                                child: const Text(
-                                  'Зарегистрироваться',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Color(0xFF6F73D2),
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: Color(0xFF6F73D2),
+                            ),
+                            _positioned(
+                              left: left,
+                              scale: scale,
+                              x: 50,
+                              y: 397,
+                              width: 293,
+                              child: _buildTextField(
+                                controller: _emailController,
+                                focusNode: _emailFocusNode,
+                                hint: 'Почта',
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                validator: _validateEmail,
+                              ),
+                            ),
+                            _positioned(
+                              left: left,
+                              scale: scale,
+                              x: 50,
+                              y: 462,
+                              width: 293,
+                              child: _buildTextField(
+                                controller: _passwordController,
+                                focusNode: _passwordFocusNode,
+                                hint: 'Пароль',
+                                obscure: !_isPasswordVisible,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) =>
+                                    _isLoading ? null : _submit(),
+                                validator: _validatePassword,
+                                icon: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: _darkColor,
+                                    size: 30,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            if (_errorMessage != null)
+                              _positioned(
+                                left: left,
+                                scale: scale,
+                                x: 50,
+                                y: 535,
+                                width: 293,
+                                child: Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            _positioned(
+                              left: left,
+                              scale: scale,
+                              x: 50,
+                              y: 669,
+                              width: 293,
+                              child: SizedBox(
+                                height: 55,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _submit,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _softDarkColor,
+                                    disabledBackgroundColor: _softDarkColor
+                                        .withValues(alpha: 0.55),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox.square(
+                                          dimension: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Войти',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                            _positioned(
+                              left: left,
+                              scale: scale,
+                              x: 0,
+                              y: 734,
+                              width: _designWidth,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Нет аккаунта?',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: _darkColor,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => context.go(AppRoutes.signup),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.only(left: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: const Text(
+                                      'Зарегистрироваться',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: _linkColor,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: _linkColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: ClipPath(
+                        clipper: _AuthForegroundBlobClipper(),
+                        child: const ColoredBox(color: _blobColor),
+                      ),
+                    ),
+                  ),
+                  _positioned(
+                    left: left,
+                    scale: scale,
+                    x: 153,
+                    y: 105,
+                    width: 87,
+                    child: Image.asset('images/backgrounds/logo.png'),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
+  double _layoutScale(BoxConstraints constraints) {
+    final widthScale = constraints.maxWidth / _designWidth;
+    final heightScale = constraints.maxHeight / _designHeight;
+    return widthScale < heightScale ? widthScale : heightScale;
+  }
+
+  Widget _positioned({
+    required double left,
+    required double scale,
+    required double x,
+    required double y,
+    required double width,
+    required Widget child,
+  }) {
+    return Positioned(
+      left: left + x * scale,
+      top: y * scale,
+      width: width * scale,
+      child: Transform.scale(
+        scale: scale,
+        alignment: Alignment.topLeft,
+        child: SizedBox(width: width, child: child),
+      ),
+    );
+  }
+
+  void _setFocusedField(FocusNode node, double fieldY) {
+    if (!mounted || !node.hasFocus) {
+      return;
+    }
+
+    setState(() {
+      _focusedFieldY = fieldY;
+    });
+  }
+
+  double _keyboardShift({
+    required BoxConstraints constraints,
+    required double keyboardBottom,
+    required double scale,
+  }) {
+    final focusedFieldY = _focusedFieldY;
+    if (keyboardBottom <= 0 || focusedFieldY == null) {
+      return 0;
+    }
+
+    final focusedFieldBottomY = focusedFieldY + 55;
+    final targetBottomY = focusedFieldBottomY > _keyboardVisibleBottomY
+        ? focusedFieldBottomY
+        : _keyboardVisibleBottomY;
+    final fieldBottom = targetBottomY * scale;
+    final keyboardTop = constraints.maxHeight - keyboardBottom;
+    final overlap = fieldBottom - keyboardTop + 24;
+    return overlap > 0 ? overlap : 0;
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
+    required FocusNode focusNode,
     required String hint,
     required String? Function(String?) validator,
     Widget? icon,
@@ -235,36 +390,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       obscureText: obscure,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       onFieldSubmitted: onSubmitted,
       validator: validator,
-      style: const TextStyle(fontSize: 20, color: Color(0xFF434A6B)),
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w500,
+        color: _darkColor,
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(fontSize: 20, color: Color(0xFF434A6B)),
+        hintStyle: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+          color: _placeholderColor,
+        ),
         suffixIcon: icon,
         filled: true,
         fillColor: Colors.transparent,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 20,
+          horizontal: 15,
+          vertical: 14,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF434A6B), width: 2),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _softDarkColor, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF434A6B), width: 2),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _softDarkColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.red.shade400, width: 2),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.red.shade400, width: 2),
         ),
       ),
@@ -290,6 +454,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   String _messageFromError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return friendlyErrorMessage(
+      error,
+      fallback: 'Не удалось войти. Попробуйте еще раз.',
+    );
   }
+}
+
+class _AuthForegroundBlobClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.14)
+      ..cubicTo(
+        size.width * 0.87,
+        size.height * 0.28,
+        size.width * 0.67,
+        size.height * 0.34,
+        size.width * 0.55,
+        size.height * 0.34,
+      )
+      ..cubicTo(
+        size.width * 0.39,
+        size.height * 0.34,
+        size.width * 0.28,
+        size.height * 0.24,
+        size.width * 0.16,
+        size.height * 0.24,
+      )
+      ..cubicTo(
+        size.width * 0.08,
+        size.height * 0.24,
+        size.width * 0.03,
+        size.height * 0.25,
+        0,
+        size.height * 0.26,
+      )
+      ..close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }

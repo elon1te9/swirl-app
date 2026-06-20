@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../core/utils/media_url_builder.dart';
 import '../../domain/models/avatar_model.dart';
 import '../../domain/models/profile_model.dart';
@@ -25,6 +26,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _hasLoadError = false;
   String? _errorMessage;
   List<AvatarModel> _avatars = const [];
   int? _selectedAvatarId;
@@ -44,6 +46,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
+      _hasLoadError = false;
       _errorMessage = null;
     });
 
@@ -60,6 +63,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         _nameController.text = profile.name;
         _avatars = avatars;
         _selectedAvatarId = _findAvatarId(profile, avatars);
+        _hasLoadError = false;
         _isLoading = false;
       });
     } on ProfileUnauthorizedException {
@@ -73,7 +77,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       setState(() {
         _isLoading = false;
-        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+        _hasLoadError = true;
+        _errorMessage = friendlyErrorMessage(
+          error,
+          fallback: 'Не удалось загрузить профиль. Попробуйте еще раз.',
+        );
       });
     }
   }
@@ -84,6 +92,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     if (name.isEmpty) {
       setState(() {
+        _hasLoadError = false;
         _errorMessage = 'Введите имя.';
       });
       return;
@@ -91,6 +100,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     if (avatarId == null) {
       setState(() {
+        _hasLoadError = false;
         _errorMessage = 'Выберите аватарку.';
       });
       return;
@@ -98,6 +108,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     setState(() {
       _isSaving = true;
+      _hasLoadError = false;
       _errorMessage = null;
     });
 
@@ -118,7 +129,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         return;
       }
 
-      final message = error.toString().replaceFirst('Exception: ', '');
+      final message = friendlyErrorMessage(
+        error,
+        fallback: 'Не удалось сохранить профиль. Попробуйте еще раз.',
+      );
       if (message.startsWith('Аватарка сохранена.')) {
         context.go(AppRoutes.profile);
         return;
@@ -126,6 +140,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       setState(() {
         _isSaving = false;
+        _hasLoadError = false;
         _errorMessage = message;
       });
     }
@@ -140,14 +155,30 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: Colors.white),
               )
+            : _hasLoadError
+            ? _EditLoadError(
+                message:
+                    _errorMessage ??
+                    'Не удалось загрузить профиль. Попробуйте еще раз.',
+                onRetry: _loadData,
+                onBack: () => context.go(AppRoutes.profile),
+              )
             : LayoutBuilder(
                 builder: (context, constraints) {
                   final contentTopGap = (constraints.maxHeight * 0.09)
                       .clamp(28.0, 74.0)
                       .toDouble();
+                  final keyboardBottom = MediaQuery.viewInsetsOf(
+                    context,
+                  ).bottom;
 
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      8,
+                      20,
+                      28 + keyboardBottom,
+                    ),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: constraints.maxHeight - 36,
@@ -258,6 +289,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                                     style: FilledButton.styleFrom(
                                       backgroundColor: _accentColor,
                                       foregroundColor: _solidCardColor,
+                                      textStyle: const TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                     child: _isSaving
                                         ? const SizedBox.square(
@@ -279,6 +315,62 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   );
                 },
               ),
+      ),
+    );
+  }
+}
+
+class _EditLoadError extends StatelessWidget {
+  const _EditLoadError({
+    required this.message,
+    required this.onRetry,
+    required this.onBack,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _ProfileEditScreenState._cardColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onRetry,
+              style: FilledButton.styleFrom(
+                backgroundColor: _ProfileEditScreenState._accentColor,
+                foregroundColor: _ProfileEditScreenState._solidCardColor,
+              ),
+              child: const Text('Повторить'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onBack,
+              child: const Text(
+                'Назад',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
