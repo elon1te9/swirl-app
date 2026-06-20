@@ -9,6 +9,7 @@ class ApiPaths {
   static const profileAvatar = '/profile/avatar';
   static const sections = '/sections';
   static const dailyTest = '/daily-test';
+  static const completeDailyTest = '/daily-test/complete';
 
   static String sectionDetails(int sectionId) => '/sections/$sectionId';
 

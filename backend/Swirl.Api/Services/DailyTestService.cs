@@ -14,16 +14,19 @@ public class DailyTestService : IDailyTestService
 
     private static readonly string[] ExerciseTypes =
     {
+        "picture_to_english_input",
         "english_to_russian_choice",
         "russian_to_english_choice",
         "russian_to_english_input",
-        "english_to_russian_input"
+        "english_to_russian_input",
+        "audio_to_russian_choice"
     };
 
     private static readonly string[] ChoiceExerciseTypes =
     {
         "english_to_russian_choice",
-        "russian_to_english_choice"
+        "russian_to_english_choice",
+        "audio_to_russian_choice"
     };
 
     private readonly AppDbContext _context;
@@ -56,13 +59,15 @@ public class DailyTestService : IDailyTestService
             .Take(Math.Min(MaximumQuestions, learnedWords.Count))
             .ToList();
         var shuffledExerciseTypes = Shuffle(ExerciseTypes);
+        var optionUsage = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         var exercises = selectedWords
             .Select((word, index) => CreateExercise(
                 index + 1,
                 word,
                 learnedWords,
-                shuffledExerciseTypes[index % shuffledExerciseTypes.Count]))
+                shuffledExerciseTypes[index % shuffledExerciseTypes.Count],
+                optionUsage))
             .ToList();
 
         return new DailyTestResponse
@@ -210,16 +215,18 @@ public class DailyTestService : IDailyTestService
         int id,
         LearnedWord word,
         List<LearnedWord> learnedWords,
-        string type)
+        string type,
+        Dictionary<string, int> optionUsage)
     {
+        type = EnsureMediaIsAvailable(type, word);
         var options = new List<string>();
 
         if (ChoiceExerciseTypes.Contains(type))
         {
-            options = CreateChoiceOptions(type, word, learnedWords);
+            options = CreateChoiceOptions(type, word, learnedWords, optionUsage);
             if (options.Count < 4)
             {
-                type = type == "english_to_russian_choice"
+                type = UsesRussianAnswer(type)
                     ? "english_to_russian_input"
                     : "russian_to_english_input";
                 options = new List<string>();
@@ -232,8 +239,12 @@ public class DailyTestService : IDailyTestService
             WordId = word.Id,
             Type = type,
             QuestionText = GetQuestionText(type, word),
-            QuestionImageUrl = null,
-            QuestionAudioUrl = null,
+            QuestionImageUrl = type == "picture_to_english_input"
+                ? word.ImageUrl
+                : null,
+            QuestionAudioUrl = type == "audio_to_russian_choice"
+                ? word.AudioUrl
+                : null,
             CorrectAnswer = GetCorrectAnswer(type, word),
             Options = options
         };
@@ -242,20 +253,29 @@ public class DailyTestService : IDailyTestService
     private static List<string> CreateChoiceOptions(
         string type,
         LearnedWord word,
-        List<LearnedWord> learnedWords)
+        List<LearnedWord> learnedWords,
+        Dictionary<string, int> optionUsage)
     {
         var correctAnswer = GetCorrectAnswer(type, word);
         var incorrectOptions = learnedWords
             .Where(candidate => candidate.Id != word.Id)
             .Select(candidate => UsesRussianAnswer(type) ? candidate.Russian : candidate.English)
+            .Where(option => !string.IsNullOrWhiteSpace(option))
             .Where(option => !string.Equals(option, correctAnswer, StringComparison.OrdinalIgnoreCase))
-            .Distinct()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(option => optionUsage.GetValueOrDefault(option))
+            .ThenBy(_ => Random.Shared.Next())
             .Take(3)
             .ToList();
 
         if (incorrectOptions.Count < 3)
         {
             return new List<string>();
+        }
+
+        foreach (var incorrectOption in incorrectOptions)
+        {
+            optionUsage[incorrectOption] = optionUsage.GetValueOrDefault(incorrectOption) + 1;
         }
 
         var options = new List<string>();
@@ -280,7 +300,9 @@ public class DailyTestService : IDailyTestService
             {
                 Id = progress.WordId,
                 English = progress.Word.English,
-                Russian = progress.Word.Russian
+                Russian = progress.Word.Russian,
+                ImageUrl = progress.Word.ImageUrl,
+                AudioUrl = progress.Word.AudioUrl
             })
             .ToListAsync(cancellationToken);
     }
@@ -295,6 +317,11 @@ public class DailyTestService : IDailyTestService
         if (type == "russian_to_english_choice" || type == "russian_to_english_input")
         {
             return word.Russian;
+        }
+
+        if (type == "audio_to_russian_choice")
+        {
+            return null;
         }
 
         return word.English;
@@ -312,7 +339,24 @@ public class DailyTestService : IDailyTestService
 
     private static bool UsesRussianAnswer(string type)
     {
-        return type == "english_to_russian_choice" || type == "english_to_russian_input";
+        return type == "english_to_russian_choice"
+            || type == "english_to_russian_input"
+            || type == "audio_to_russian_choice";
+    }
+
+    private static string EnsureMediaIsAvailable(string type, LearnedWord word)
+    {
+        if (type == "picture_to_english_input" && string.IsNullOrWhiteSpace(word.ImageUrl))
+        {
+            return "russian_to_english_input";
+        }
+
+        if (type == "audio_to_russian_choice" && string.IsNullOrWhiteSpace(word.AudioUrl))
+        {
+            return "english_to_russian_choice";
+        }
+
+        return type;
     }
 
     private static string Normalize(string? value)
@@ -359,6 +403,10 @@ public class DailyTestService : IDailyTestService
         public string English { get; set; } = string.Empty;
 
         public string Russian { get; set; } = string.Empty;
+
+        public string? ImageUrl { get; set; }
+
+        public string? AudioUrl { get; set; }
     }
 
     private class CheckedDailyTestAnswer
