@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../domain/models/level_model.dart';
+import '../../domain/models/level_session_model.dart';
 import '../../domain/models/word_model.dart';
 import 'api_paths.dart';
 
@@ -29,6 +30,22 @@ class LevelApi {
       ApiPaths.markLevelWordsLearned(levelId),
       data: {'wordIds': wordIds},
     );
+  }
+
+  Future<LevelSessionModel> getLevelSession(int levelId) async {
+    final response = await _dio.get(ApiPaths.levelSession(levelId));
+    return LevelSessionModel.fromJson(_jsonMap(response.data));
+  }
+
+  Future<CompleteLevelResultModel> completeLevel(
+    int levelId, {
+    required List<LevelAnswerModel> answers,
+  }) async {
+    final response = await _dio.post(
+      ApiPaths.completeLevel(levelId),
+      data: {'answers': answers.map((answer) => answer.toJson()).toList()},
+    );
+    return CompleteLevelResultModel.fromJson(_jsonMap(response.data));
   }
 
   Map<String, dynamic> _jsonMap(Object? data) {

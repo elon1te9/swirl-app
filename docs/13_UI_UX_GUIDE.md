@@ -354,17 +354,17 @@ Level win pop-up should feel positive and rewarding.
 Show:
 
 - success message
-- information about opened next level if available
-- continue button
-- back to map button
+- mistakes count
+- finish button back to the current section levels
 
 Lose pop-up should be supportive, not punishing.
 
 Show:
 
 - failed attempt message
+- mistakes count
 - try again button
-- back to map button
+- back to current section levels button
 
 ## Daily test
 

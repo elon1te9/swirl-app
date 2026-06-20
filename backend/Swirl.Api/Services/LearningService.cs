@@ -35,6 +35,8 @@ public class LearningService : ILearningService
     {
         var access = await GetAccessibleLevelAsync(userId, levelId, cancellationToken);
         var exercises = await GetActiveExercisesForLevelAsync(levelId, cancellationToken);
+        var optionWords = await GetOptionWordsForLevelAsync(access.Level.SectionId, cancellationToken);
+        var optionUsage = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         return new LevelSessionResponse
         {
@@ -42,7 +44,9 @@ public class LearningService : ILearningService
             Title = access.Level.Title,
             SectionTitle = access.Level.Section.Title,
             IsFinalTest = access.Level.IsFinalTest,
-            Exercises = exercises.Select(CreateExerciseResponse).ToList()
+            Exercises = exercises
+                .Select(exercise => CreateExerciseResponse(exercise, optionWords, optionUsage))
+                .ToList()
         };
     }
 
@@ -135,18 +139,15 @@ public class LearningService : ILearningService
         };
     }
 
-    private static ExerciseResponse CreateExerciseResponse(Exercise exercise)
+    private static ExerciseResponse CreateExerciseResponse(
+        Exercise exercise,
+        List<OptionWord> optionWords,
+        Dictionary<string, int> optionUsage)
     {
         var options = new List<string>();
         if (ChoiceExerciseTypes.Contains(exercise.Type))
         {
-            options = exercise.ExerciseOptions
-                .OrderBy(option => option.SortOrder)
-                .ThenBy(option => option.Id)
-                .Select(option => option.OptionText)
-                .ToList();
-
-            ShuffleOptions(options);
+            options = CreateChoiceOptions(exercise, optionWords, optionUsage);
         }
 
         return new ExerciseResponse
@@ -163,6 +164,39 @@ public class LearningService : ILearningService
             CorrectAnswer = exercise.CorrectAnswer,
             Options = options
         };
+    }
+
+    private static List<string> CreateChoiceOptions(
+        Exercise exercise,
+        List<OptionWord> optionWords,
+        Dictionary<string, int> optionUsage)
+    {
+        var correctAnswer = exercise.CorrectAnswer;
+        var incorrectOptions = optionWords
+            .Where(word => word.Id != exercise.WordId)
+            .Select(word => UsesRussianAnswer(exercise.Type) ? word.Russian : word.English)
+            .Concat(exercise.ExerciseOptions
+                .Where(option => !option.IsCorrect)
+                .OrderBy(option => option.SortOrder)
+                .ThenBy(option => option.Id)
+                .Select(option => option.OptionText))
+            .Where(option => !string.IsNullOrWhiteSpace(option))
+            .Where(option => !string.Equals(option, correctAnswer, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(option => optionUsage.GetValueOrDefault(option))
+            .ThenBy(_ => Random.Shared.Next())
+            .Take(3)
+            .ToList();
+
+        foreach (var incorrectOption in incorrectOptions)
+        {
+            optionUsage[incorrectOption] = optionUsage.GetValueOrDefault(incorrectOption) + 1;
+        }
+
+        var options = new List<string> { correctAnswer };
+        options.AddRange(incorrectOptions);
+
+        return ShuffleOptions(options);
     }
 
     private async Task<LevelAccess> GetAccessibleLevelAsync(
@@ -218,6 +252,27 @@ public class LearningService : ILearningService
             .Where(exercise => exercise.LevelId == levelId && exercise.IsActive)
             .OrderBy(exercise => exercise.SortOrder ?? int.MaxValue)
             .ThenBy(exercise => exercise.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<OptionWord>> GetOptionWordsForLevelAsync(
+        int sectionId,
+        CancellationToken cancellationToken)
+    {
+        return await _context.Words
+            .Where(word =>
+                word.IsActive
+                && word.Level.IsActive
+                && !word.Level.IsFinalTest
+                && word.Level.SectionId == sectionId)
+            .OrderBy(word => word.Level.SortOrder)
+            .ThenBy(word => word.Id)
+            .Select(word => new OptionWord
+            {
+                Id = word.Id,
+                English = word.English,
+                Russian = word.Russian
+            })
             .ToListAsync(cancellationToken);
     }
 
@@ -441,6 +496,12 @@ public class LearningService : ILearningService
         return options;
     }
 
+    private static bool UsesRussianAnswer(string type)
+    {
+        return type == "english_to_russian_choice"
+            || type == "audio_to_russian_choice";
+    }
+
     private static string NormalizeAnswer(string answer)
     {
         return Regex.Replace(answer.Trim().ToLowerInvariant(), @"\s+", " ");
@@ -479,5 +540,14 @@ public class LearningService : ILearningService
         public bool IsCorrect { get; set; }
 
         public int? TimeSpentMs { get; set; }
+    }
+
+    private class OptionWord
+    {
+        public int Id { get; set; }
+
+        public string English { get; set; } = string.Empty;
+
+        public string Russian { get; set; } = string.Empty;
     }
 }

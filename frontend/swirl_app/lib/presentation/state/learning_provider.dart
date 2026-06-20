@@ -2,9 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../data/api/level_api.dart';
 import '../../data/api/section_api.dart';
 import '../../domain/models/level_model.dart';
+import '../../domain/models/level_session_model.dart';
 import '../../domain/models/section_model.dart';
 import '../../domain/models/word_model.dart';
 
@@ -79,6 +81,25 @@ class LearningController {
       throw _mapLearningError(error);
     }
   }
+
+  Future<LevelSessionModel> loadLevelSession(int levelId) async {
+    try {
+      return await levelApi.getLevelSession(levelId);
+    } on DioException catch (error) {
+      throw _mapLearningError(error);
+    }
+  }
+
+  Future<CompleteLevelResultModel> completeLevel(
+    int levelId, {
+    required List<LevelAnswerModel> answers,
+  }) async {
+    try {
+      return await levelApi.completeLevel(levelId, answers: answers);
+    } on DioException catch (error) {
+      throw _mapLearningError(error);
+    }
+  }
 }
 
 class LearningUnauthorizedException implements Exception {
@@ -91,11 +112,11 @@ class LearningUnauthorizedException implements Exception {
 }
 
 Exception _mapLearningError(DioException error) {
-  if (error.response?.statusCode == 401) {
+  if (isUnauthorizedError(error)) {
     return const LearningUnauthorizedException();
   }
 
-  final code = _errorCode(error.response?.data);
+  final code = apiErrorCode(error.response?.data);
   if (code == 'level_locked') {
     return Exception('Этот уровень пока закрыт.');
   }
@@ -104,27 +125,10 @@ Exception _mapLearningError(DioException error) {
     return Exception('Не удалось найти данные. Попробуйте вернуться назад.');
   }
 
-  if (error.type == DioExceptionType.connectionTimeout ||
-      error.type == DioExceptionType.receiveTimeout ||
-      error.type == DioExceptionType.connectionError) {
-    return Exception(
-      'Не удалось подключиться к серверу. Проверьте интернет и попробуйте еще раз.',
-    );
-  }
-
-  return Exception('Не удалось загрузить данные. Попробуйте еще раз.');
-}
-
-String _errorCode(Object? data) {
-  if (data is! Map) {
-    return '';
-  }
-
-  final error = data['error'];
-  if (error is! Map) {
-    return '';
-  }
-
-  final code = error['code'];
-  return code is String ? code : '';
+  return Exception(
+    friendlyDioMessage(
+      error,
+      fallback: 'Не удалось загрузить данные. Попробуйте еще раз.',
+    ),
+  );
 }

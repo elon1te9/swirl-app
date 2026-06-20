@@ -316,13 +316,13 @@ Tasks:
 - Show lose pop-up if backend returns `isLevelCompleted = false`.
 - Show mistakes count if needed.
 - On success, update local progress state.
-- On success, allow user to continue to next level or return to map.
-- On failure, allow user to retry or return to map.
+- On success, allow user to return to the current section level map.
+- On failure, allow user to retry or return to the current section level map.
 - Refresh level map after completion.
 
 Expected result:
 
-- Successful level completion opens next level.
+- Successful level completion unlocks the next level on the level map.
 - Failed level attempt does not open next level.
 - User sees clear result state.
 

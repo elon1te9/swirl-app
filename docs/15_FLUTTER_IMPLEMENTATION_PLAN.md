@@ -207,10 +207,10 @@ lib/
 - Show win popup.
 - Show lose popup.
 - Show `mistakesCount`.
-- Use `openedNextLevelId` when present.
+- Use `openedNextLevelId` when present to refresh and show the unlocked level on the map.
 - Refresh levels and profile.
 - Add retry.
-- Add back to map.
+- Add navigation back to the current section level map.
 
 ### Stage 8. Daily Test
 
