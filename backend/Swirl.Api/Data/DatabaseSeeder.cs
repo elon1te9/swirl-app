@@ -527,13 +527,18 @@ public static class DatabaseSeeder
     {
         var usesRussianOptions = exercise.Type is "english_to_russian_choice" or "audio_to_russian_choice";
         var correctAnswer = exercise.CorrectAnswer;
-        var incorrectOptions = sectionWords
+        var candidates = sectionWords
             .Where(word => word.Level.SectionId == exercise.Word.Level.SectionId && word.Id != exercise.WordId)
             .OrderBy(word => Math.Abs(word.Level.LevelNumber - exercise.Word.Level.LevelNumber))
             .ThenBy(word => word.Level.LevelNumber)
             .ThenBy(word => word.Id)
             .Select(word => usesRussianOptions ? word.Russian : word.English)
             .Where(option => !string.Equals(option, correctAnswer, StringComparison.OrdinalIgnoreCase))
+            .Distinct()
+            .ToArray();
+        var incorrectOptions = candidates
+            .Skip(((exercise.SortOrder ?? 1) - 1) * 3 % Math.Max(candidates.Length, 1))
+            .Concat(candidates)
             .Distinct()
             .Take(3)
             .ToArray();
@@ -768,6 +773,11 @@ public static class DatabaseSeeder
 
     private static string GetLevelCefrLevel(int levelNumber)
     {
+        if (levelNumber == FinalTestLevelNumber)
+        {
+            return "B2";
+        }
+
         if (levelNumber == 1 || levelNumber == 2)
         {
             return "A1";
@@ -788,7 +798,7 @@ public static class DatabaseSeeder
             return "B1/B2";
         }
 
-        return "mixed";
+        return "B2";
     }
 
     private static string GetLevelDescription(string sectionTitle, int levelNumber)

@@ -26,14 +26,16 @@ public class WordLearningService : IWordLearningService
     {
         var access = await GetAccessibleLevelAsync(userId, levelId, cancellationToken);
 
-        if (access.Level.IsFinalTest)
-        {
-            return new List<WordResponse>();
-        }
-
         return await _context.Words
-            .Where(word => word.LevelId == levelId && word.IsActive)
-            .OrderBy(word => word.Id)
+            .Where(word =>
+                word.IsActive
+                && (access.Level.IsFinalTest
+                    ? word.Level.SectionId == access.Level.SectionId
+                        && word.Level.IsActive
+                        && !word.Level.IsFinalTest
+                    : word.LevelId == levelId))
+            .OrderBy(word => word.Level.LevelNumber)
+            .ThenBy(word => word.Id)
             .Select(word => new WordResponse
             {
                 Id = word.Id,

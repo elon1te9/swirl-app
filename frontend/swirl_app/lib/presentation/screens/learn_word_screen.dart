@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../core/utils/media_url_builder.dart';
 import '../../domain/models/level_model.dart';
 import '../../domain/models/word_model.dart';
@@ -177,7 +178,7 @@ class _LearnWordScreenState extends ConsumerState<LearnWordScreen> {
           .map((word) => word.id)
           .where((id) => id > 0)
           .toList();
-      if (wordIds.isNotEmpty) {
+      if (wordIds.isNotEmpty && _levelDetails?.isFinalTest != true) {
         await ref
             .read(learningControllerProvider)
             .markLevelWordsLearned(levelId, wordIds: wordIds);
@@ -365,7 +366,10 @@ class _LearnWordScreenState extends ConsumerState<LearnWordScreen> {
   }
 
   String _messageFromError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return friendlyErrorMessage(
+      error,
+      fallback: 'Не удалось загрузить слова. Попробуйте еще раз.',
+    );
   }
 }
 
@@ -396,15 +400,18 @@ class _Header extends StatelessWidget {
             ),
           ),
           Center(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 31,
-                fontWeight: FontWeight.w800,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 54),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 31,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -463,88 +470,97 @@ class _WordsCompleteSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        28,
-        22,
-        28,
-        20 + MediaQuery.paddingOf(context).bottom,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.9;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          28,
+          22,
+          28,
+          20 + MediaQuery.paddingOf(context).bottom,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _completeSheetLevelLabel(details),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          color: _LearnWordScreenState._purpleColor,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          height: 1.05,
-                        ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _completeSheetLevelLabel(details),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Montserrat',
+                              color: _LearnWordScreenState._purpleColor,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w500,
+                              height: 1.08,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Слова изучены',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              color: _LearnWordScreenState._solidCardColor,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              height: 1.04,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Слова изучены',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          color: _LearnWordScreenState._solidCardColor,
-                          fontSize: 31,
-                          fontWeight: FontWeight.w800,
-                          height: 1.04,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 126,
+                      height: 126,
+                      child: Image.asset(
+                        'images/mascot_levels/words_complete.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 162,
-                  height: 162,
-                  child: Image.asset(
-                    'images/mascot_levels/words_complete.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: onStartTraining,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _LearnWordScreenState._purpleColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    'К тренировке',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            FilledButton(
-              onPressed: onStartTraining,
-              style: FilledButton.styleFrom(
-                backgroundColor: _LearnWordScreenState._purpleColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text(
-                'К тренировке',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
