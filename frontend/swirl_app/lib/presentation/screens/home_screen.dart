@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../core/utils/media_url_builder.dart';
 import '../../domain/models/continue_learning_model.dart';
 import '../../domain/models/profile_model.dart';
@@ -59,6 +60,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _isLoading = false;
       });
     } on ProfileUnauthorizedException {
+      if (mounted) {
+        context.go(AppRoutes.first);
+      }
+    } on ContinueLearningUnauthorizedException {
       if (mounted) {
         context.go(AppRoutes.first);
       }
@@ -124,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           const Text(
             'Готов изучать новые слова?',
             textAlign: TextAlign.center,
@@ -137,15 +142,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SizedBox(height: 10),
           Image.asset(
             'images/mascot_home.png',
-            height: 170,
+            height: 186,
             fit: BoxFit.contain,
           ),
-          const SizedBox(height: 10),
-          _StreakCard(currentStreak: profile.currentStreak),
+          const SizedBox(height: 8),
+          _StreakCard(
+            currentStreak: profile.currentStreak,
+            lastActivityDate: profile.lastActivityDate,
+          ),
           const SizedBox(height: 22),
           _DailyTestCard(onTap: () => context.go(AppRoutes.dailyTest)),
           if (continueLearning != null) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: 18),
             _ContinueLearningCard(
               continueLearning: continueLearning,
               onTap: () => context.go(
@@ -155,13 +163,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
           _SectionsSummary(sections: _sections),
-          const SizedBox(height: 10),
+          const SizedBox(height: 2),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: () => context.go(AppRoutes.sections),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.only(left: 12),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               iconAlignment: IconAlignment.end,
               icon: const Icon(
                 Icons.arrow_forward_ios,
@@ -180,7 +193,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _messageFromError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return friendlyErrorMessage(
+      error,
+      fallback: 'Не удалось загрузить главную. Попробуйте еще раз.',
+    );
   }
 }
 
@@ -235,12 +251,16 @@ class _Header extends StatelessWidget {
         Container(
           height: 51,
           constraints: const BoxConstraints(minWidth: 74),
+          alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: _HomeScreenState._cardColor,
             borderRadius: BorderRadius.circular(40),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 '${profile.currentStreak}',
@@ -261,13 +281,20 @@ class _Header extends StatelessWidget {
 }
 
 class _StreakCard extends StatelessWidget {
-  const _StreakCard({required this.currentStreak});
+  const _StreakCard({
+    required this.currentStreak,
+    required this.lastActivityDate,
+  });
 
   final int currentStreak;
+  final DateTime? lastActivityDate;
 
   @override
   Widget build(BuildContext context) {
-    final activeDays = currentStreak.clamp(0, 7);
+    final activeWeekdays = _activeWeekdayIndexes(
+      currentStreak: currentStreak,
+      lastActivityDate: lastActivityDate,
+    );
     const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
     return Column(
@@ -277,46 +304,70 @@ class _StreakCard extends StatelessWidget {
           'Серия',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          height: 64,
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-          decoration: BoxDecoration(
-            color: _HomeScreenState._cardColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              const Text('🔥', style: TextStyle(fontSize: 32)),
-              const SizedBox(width: 10),
-              Text(
-                '$currentStreak ${_dayWord(currentStreak)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Row(
-                children: List.generate(weekdays.length, (index) {
-                  final isActive = index < activeDays;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 420;
+            final dayWidth = isCompact ? 22.0 : 24.0;
+            final dotSize = isCompact ? 21.0 : 23.0;
 
-                  return Padding(
-                    padding: EdgeInsets.only(left: index == 0 ? 0 : 6),
-                    child: _WeekdayDot(
-                      label: weekdays[index],
-                      isActive: isActive,
-                    ),
-                  );
-                }),
+            return Container(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              decoration: BoxDecoration(
+                color: _HomeScreenState._cardColor,
+                borderRadius: BorderRadius.circular(10),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: isCompact ? 112 : 122,
+                    child: Row(
+                      children: [
+                        Text(
+                          '🔥',
+                          style: TextStyle(fontSize: isCompact ? 26 : 28),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$currentStreak ${_dayWord(currentStreak)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 12 : 16),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(weekdays.length, (index) {
+                        final isActive = activeWeekdays.contains(index);
+
+                        return _WeekdayDot(
+                          label: weekdays[index],
+                          isActive: isActive,
+                          width: dayWidth,
+                          dotSize: dotSize,
+                        );
+                      }),
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 2 : 4),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -324,21 +375,28 @@ class _StreakCard extends StatelessWidget {
 }
 
 class _WeekdayDot extends StatelessWidget {
-  const _WeekdayDot({required this.label, required this.isActive});
+  const _WeekdayDot({
+    required this.label,
+    required this.isActive,
+    required this.width,
+    required this.dotSize,
+  });
 
   final String label;
   final bool isActive;
+  final double width;
+  final double dotSize;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 24,
+      width: width,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 23,
-            height: 23,
+            width: dotSize,
+            height: dotSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isActive
@@ -415,7 +473,17 @@ class _DailyTestCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+            const SizedBox(
+              width: 42,
+              height: 42,
+              child: Center(
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -435,6 +503,7 @@ class _ContinueLearningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final section = continueLearning.section;
+    final style = _sectionCardStyle(section.title);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +512,7 @@ class _ContinueLearningCard extends StatelessWidget {
           'Продолжить обучение',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -451,85 +520,41 @@ class _ContinueLearningCard extends StatelessWidget {
         InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: _HomeScreenState._dangerColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                _ContinueSectionImage(title: section.title),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        section.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        continueLearning.nextLevelText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(50),
-                              child: LinearProgressIndicator(
-                                value: continueLearning.progressValue,
-                                minHeight: 8,
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.62,
-                                ),
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                  _HomeScreenState._accentColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            continueLearning.progressText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 340;
+              final imageSize = isNarrow ? 154.0 : 176.0;
+              final imageRight = isNarrow ? -54.0 : -42.0;
+
+              return Container(
+                constraints: const BoxConstraints(minHeight: 122),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: style.background,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 8),
-                const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.navigate_next,
-                    color: _HomeScreenState._dangerColor,
-                    size: 24,
-                  ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: imageRight,
+                      top: -28,
+                      bottom: -42,
+                      child: _ContinueSectionImage(
+                        title: section.title,
+                        size: imageSize,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                      child: _ContinueLearningInfo(
+                        continueLearning: continueLearning,
+                        style: style,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -538,32 +563,159 @@ class _ContinueLearningCard extends StatelessWidget {
 }
 
 class _ContinueSectionImage extends StatelessWidget {
-  const _ContinueSectionImage({required this.title});
+  const _ContinueSectionImage({required this.title, required this.size});
 
   final String title;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 104,
-      height: 96,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Opacity(
-          opacity: 0.35,
-          child: Transform.rotate(
-            angle: -0.26,
-            child: Image.asset(
-              _sectionLogoAssetPath(title),
-              width: 96,
-              height: 96,
-              fit: BoxFit.contain,
-              color: _HomeScreenState._accentColor,
-              colorBlendMode: BlendMode.srcIn,
+    final style = _sectionCardStyle(title);
+
+    return Opacity(
+      opacity: 0.48,
+      child: Image.asset(
+        _sectionLogoAssetPath(title),
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        color: style.logo,
+        colorBlendMode: BlendMode.srcIn,
+      ),
+    );
+  }
+}
+
+class _ContinueArrowButton extends StatelessWidget {
+  const _ContinueArrowButton({required this.style});
+
+  final _SectionCardStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: style.arrowBackground,
+        borderRadius: BorderRadius.circular(21),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Icon(Icons.navigate_next, color: style.arrowIcon, size: 27),
+    );
+  }
+}
+
+class _ContinueLearningContent extends StatelessWidget {
+  const _ContinueLearningContent({
+    required this.continueLearning,
+    required this.style,
+  });
+
+  final ContinueLearningModel continueLearning;
+  final _SectionCardStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final section = continueLearning.section;
+    final displayTotal = _displayTotalLevels(continueLearning.totalLevels);
+    final displayCompleted = continueLearning.completedLevels.clamp(
+      0,
+      displayTotal,
+    );
+    final progressValue = displayTotal <= 0
+        ? 0.0
+        : (displayCompleted / displayTotal).clamp(0.0, 1.0);
+    final progressText = displayTotal <= 0
+        ? '$displayCompleted'
+        : '$displayCompleted/$displayTotal';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          section.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: style.text,
+            fontSize: 21,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          continueLearning.nextLevelText,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: style.text.withValues(alpha: 0.9),
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(50),
+                child: LinearProgressIndicator(
+                  value: progressValue,
+                  minHeight: 8,
+                  backgroundColor: style.progressBackground,
+                  valueColor: AlwaysStoppedAnimation<Color>(style.progress),
+                ),
+              ),
+            ),
+            const SizedBox(width: 9),
+            Text(
+              progressText,
+              style: TextStyle(
+                color: style.text,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ContinueLearningInfo extends StatelessWidget {
+  const _ContinueLearningInfo({
+    required this.continueLearning,
+    required this.style,
+  });
+
+  final ContinueLearningModel continueLearning;
+  final _SectionCardStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 202),
+            child: _ContinueLearningContent(
+              continueLearning: continueLearning,
+              style: style,
             ),
           ),
         ),
-      ),
+        const SizedBox(width: 18),
+        _ContinueArrowButton(style: style),
+      ],
     );
   }
 }
@@ -582,7 +734,7 @@ class _SectionsSummary extends StatelessWidget {
           'Разделы',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -591,7 +743,7 @@ class _SectionsSummary extends StatelessWidget {
           const _EmptySections()
         else
           SizedBox(
-            height: 196,
+            height: 184,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: sections.length,
@@ -626,7 +778,7 @@ class _SectionProgressCard extends StatelessWidget {
       onTap: () => context.go(AppRoutes.sections),
       child: Container(
         width: 125,
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 3),
         decoration: BoxDecoration(
           color: style.background,
           borderRadius: BorderRadius.circular(10),
@@ -636,13 +788,13 @@ class _SectionProgressCard extends StatelessWidget {
           children: [
             Image.asset(
               _sectionLogoAssetPath(section.title),
-              width: 68,
-              height: 68,
+              width: 80,
+              height: 80,
               fit: BoxFit.contain,
               color: style.logo,
               colorBlendMode: BlendMode.srcIn,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             Text(
               section.title,
               maxLines: 1,
@@ -650,19 +802,22 @@ class _SectionProgressCard extends StatelessWidget {
               style: TextStyle(
                 color: style.text,
                 fontSize: 20,
+                height: 1.0,
                 fontWeight: FontWeight.w700,
               ),
             ),
+            const SizedBox(height: 1),
             Text(
               '$displayTotal ${_levelWord(displayTotal)}',
               maxLines: 1,
               style: TextStyle(
                 color: style.text,
                 fontSize: 11,
+                height: 1.0,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(50),
               child: LinearProgressIndicator(
@@ -672,12 +827,13 @@ class _SectionProgressCard extends StatelessWidget {
                 minHeight: 7,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 7),
             Text(
               '$displayCompleted/$displayTotal',
               style: TextStyle(
                 color: style.text,
-                fontSize: 11,
+                fontSize: 12,
+                height: 1.0,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -829,6 +985,8 @@ class _SectionCardStyle {
     required this.logo,
     required this.progress,
     required this.progressBackground,
+    required this.arrowBackground,
+    required this.arrowIcon,
   });
 
   final Color background;
@@ -836,6 +994,8 @@ class _SectionCardStyle {
   final Color logo;
   final Color progress;
   final Color progressBackground;
+  final Color arrowBackground;
+  final Color arrowIcon;
 }
 
 String _dayWord(int count) {
@@ -881,17 +1041,41 @@ _SectionCardStyle _sectionCardStyle(String title) {
         logo: _HomeScreenState._accentColor,
         progress: _HomeScreenState._accentColor,
         progressBackground: Colors.white.withValues(alpha: 0.62),
+        arrowBackground: Colors.white,
+        arrowIcon: _HomeScreenState._dangerColor,
       );
     case 'health':
       return _SectionCardStyle(
         background: _HomeScreenState._accentColor,
         text: Colors.white,
-        logo: Colors.white,
+        logo: _HomeScreenState._dangerColor.withValues(alpha: 0.82),
         progress: _HomeScreenState._pageColor,
         progressBackground: Colors.white.withValues(alpha: 0.72),
+        arrowBackground: Colors.white,
+        arrowIcon: _HomeScreenState._accentColor,
       );
     case 'science':
+      return _SectionCardStyle(
+        background: Colors.white,
+        text: _HomeScreenState._pageColor,
+        logo: _HomeScreenState._pageColor,
+        progress: _HomeScreenState._pageColor,
+        progressBackground: _HomeScreenState._accentColor.withValues(
+          alpha: 0.48,
+        ),
+        arrowBackground: _HomeScreenState._pageColor,
+        arrowIcon: Colors.white,
+      );
     case 'wardrobe':
+      return _SectionCardStyle(
+        background: _HomeScreenState._dangerColor,
+        text: Colors.white,
+        logo: const Color(0xFFFFCAD1),
+        progress: _HomeScreenState._accentColor,
+        progressBackground: Colors.white.withValues(alpha: 0.62),
+        arrowBackground: Colors.white,
+        arrowIcon: _HomeScreenState._dangerColor,
+      );
     default:
       return _SectionCardStyle(
         background: Colors.white,
@@ -901,6 +1085,8 @@ _SectionCardStyle _sectionCardStyle(String title) {
         progressBackground: _HomeScreenState._accentColor.withValues(
           alpha: 0.48,
         ),
+        arrowBackground: _HomeScreenState._pageColor,
+        arrowIcon: Colors.white,
       );
   }
 }
@@ -911,6 +1097,39 @@ int _displayTotalLevels(int totalLevels) {
   }
 
   return totalLevels - 1;
+}
+
+Set<int> _activeWeekdayIndexes({
+  required int currentStreak,
+  required DateTime? lastActivityDate,
+}) {
+  if (currentStreak <= 0) {
+    return const <int>{};
+  }
+
+  final fallbackDate = DateTime.now();
+  final sourceDate = lastActivityDate ?? fallbackDate;
+  final lastDate = DateTime(sourceDate.year, sourceDate.month, sourceDate.day);
+  final weekStart = lastDate.subtract(Duration(days: lastDate.weekday - 1));
+  final weekEnd = weekStart.add(const Duration(days: 6));
+  final firstStreakDate = lastDate.subtract(
+    Duration(days: currentStreak.clamp(1, 3650) - 1),
+  );
+  final activeIndexes = <int>{};
+
+  for (
+    var date = firstStreakDate;
+    !date.isAfter(lastDate);
+    date = date.add(const Duration(days: 1))
+  ) {
+    if (date.isBefore(weekStart) || date.isAfter(weekEnd)) {
+      continue;
+    }
+
+    activeIndexes.add(date.weekday - 1);
+  }
+
+  return activeIndexes;
 }
 
 String _levelWord(int count) {

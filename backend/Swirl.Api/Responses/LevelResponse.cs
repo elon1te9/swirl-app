@@ -21,4 +21,6 @@ public class LevelResponse
     public bool IsFinalTest { get; set; }
 
     public string Status { get; set; } = string.Empty;
+
+    public DateTime? CompletedAt { get; set; }
 }

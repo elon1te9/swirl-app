@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../domain/models/section_model.dart';
 import '../state/learning_provider.dart';
 
@@ -122,7 +123,10 @@ class _SectionsScreenState extends ConsumerState<SectionsScreen> {
   }
 
   String _messageFromError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return friendlyErrorMessage(
+      error,
+      fallback: 'Не удалось загрузить разделы. Попробуйте еще раз.',
+    );
   }
 }
 
@@ -152,14 +156,18 @@ class _Header extends StatelessWidget {
             ),
           ),
           const Center(
-            child: Text(
-              'Все разделы',
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.w800,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 54),
+              child: Text(
+                'Все разделы',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -179,65 +187,91 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = _sectionCardStyle(section.title);
     final levelsCount = _displayTotalLevels(section.totalLevels);
+    final completedLevels = section.completedLevels.clamp(0, levelsCount);
+    final progressValue = levelsCount <= 0
+        ? 0.0
+        : (completedLevels / levelsCount).clamp(0.0, 1.0);
     final titleScale = MediaQuery.textScalerOf(context).scale(1);
-    final titleSize = titleScale > 1.15 ? 43.0 : 48.0;
 
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
-      child: Container(
-        height: 147,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: style.background,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: style.imageRight,
-              top: style.imageTop,
-              bottom: style.imageBottom,
-              child: _SectionImage(section: section, style: style),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 330;
+          final titleSize = titleScale > 1.15
+              ? (isNarrow ? 34.0 : 40.0)
+              : (isNarrow ? 38.0 : 44.0);
+          final imageSize = isNarrow ? style.imageSize * 0.88 : style.imageSize;
+          final textRightPadding = isNarrow
+              ? (style.textRightPadding * 0.72).clamp(72.0, 110.0)
+              : style.textRightPadding;
+
+          return Container(
+            constraints: const BoxConstraints(minHeight: 147),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: style.background,
+              borderRadius: BorderRadius.circular(10),
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, style.textRightPadding, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    section.title,
-                    maxLines: titleScale > 1.2 ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: style.title,
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Outfit',
-                      fontVariations: const [FontVariation('wght', 500)],
-                      letterSpacing: -2.4,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  _LevelCountPill(
-                    label: '$levelsCount ${_levelWord(levelsCount)}',
+            child: Stack(
+              children: [
+                Positioned(
+                  right: style.imageRight,
+                  top: style.imageTop,
+                  bottom: style.imageBottom,
+                  child: _SectionImage(
+                    section: section,
                     style: style,
+                    imageSize: imageSize,
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, 16, textRightPadding, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        section.title,
+                        maxLines: titleScale > 1.2 || isNarrow ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: style.title,
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Outfit',
+                          fontVariations: const [FontVariation('wght', 500)],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _SectionProgressMeter(
+                        completedLevels: completedLevels,
+                        levelsCount: levelsCount,
+                        progressValue: progressValue,
+                        style: style,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
 class _SectionImage extends StatelessWidget {
-  const _SectionImage({required this.section, required this.style});
+  const _SectionImage({
+    required this.section,
+    required this.style,
+    required this.imageSize,
+  });
 
   final SectionModel section;
   final _SectionCardStyle style;
+  final double imageSize;
 
   @override
   Widget build(BuildContext context) {
@@ -247,8 +281,8 @@ class _SectionImage extends StatelessWidget {
         angle: style.imageAngle,
         child: Image.asset(
           _sectionLogoAssetPath(section.title),
-          width: style.imageSize,
-          height: style.imageSize,
+          width: imageSize,
+          height: imageSize,
           fit: BoxFit.contain,
           color: style.imageTint,
           colorBlendMode: BlendMode.srcIn,
@@ -258,32 +292,53 @@ class _SectionImage extends StatelessWidget {
   }
 }
 
-class _LevelCountPill extends StatelessWidget {
-  const _LevelCountPill({required this.label, required this.style});
+class _SectionProgressMeter extends StatelessWidget {
+  const _SectionProgressMeter({
+    required this.completedLevels,
+    required this.levelsCount,
+    required this.progressValue,
+    required this.style,
+  });
 
-  final String label;
+  final int completedLevels;
+  final int levelsCount;
+  final double progressValue;
   final _SectionCardStyle style;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 82),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      width: 148,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
       decoration: BoxDecoration(
-        color: style.pillBackground,
-        borderRadius: BorderRadius.circular(10),
+        color: style.progressPanel,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: style.pillText,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Outfit',
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: LinearProgressIndicator(
+                value: progressValue,
+                minHeight: 6,
+                backgroundColor: style.progressTrack,
+                valueColor: AlwaysStoppedAnimation<Color>(style.progressFill),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$completedLevels/$levelsCount',
+            maxLines: 1,
+            style: TextStyle(
+              color: style.progressText,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Outfit',
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -358,8 +413,10 @@ class _SectionCardStyle {
     required this.imageBottom,
     required this.imageAngle,
     required this.textRightPadding,
-    required this.pillBackground,
-    required this.pillText,
+    required this.progressPanel,
+    required this.progressTrack,
+    required this.progressFill,
+    required this.progressText,
   });
 
   final Color background;
@@ -372,8 +429,10 @@ class _SectionCardStyle {
   final double imageBottom;
   final double imageAngle;
   final double textRightPadding;
-  final Color pillBackground;
-  final Color pillText;
+  final Color progressPanel;
+  final Color progressTrack;
+  final Color progressFill;
+  final Color progressText;
 }
 
 _SectionCardStyle _sectionCardStyle(String title) {
@@ -390,8 +449,10 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -28,
         imageAngle: -0.12,
         textRightPadding: 136,
-        pillBackground: Color(0xFFBFC1EF),
-        pillText: Colors.white,
+        progressPanel: Color(0xFFE7E8FF),
+        progressTrack: Color(0xFFC9CBF5),
+        progressFill: Color(0xFF6F73D2),
+        progressText: Color(0xFF6F73D2),
       );
     case 'health':
       return const _SectionCardStyle(
@@ -405,8 +466,10 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -22,
         imageAngle: -0.06,
         textRightPadding: 140,
-        pillBackground: Color(0xFFDDF3FF),
-        pillText: _SectionsScreenState._accentColor,
+        progressPanel: Color(0xFFDDF3FF),
+        progressTrack: Color(0xFFF3FBFF),
+        progressFill: _SectionsScreenState._dangerColor,
+        progressText: _SectionsScreenState._accentColor,
       );
     case 'wardrobe':
       return const _SectionCardStyle(
@@ -420,8 +483,10 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -35,
         imageAngle: -0.05,
         textRightPadding: 92,
-        pillBackground: Color(0xFFEB939E),
-        pillText: Colors.white,
+        progressPanel: Color(0xFFEB939E),
+        progressTrack: Color(0xFFFFB7C0),
+        progressFill: _SectionsScreenState._accentColor,
+        progressText: Colors.white,
       );
     case 'food':
     default:
@@ -436,8 +501,10 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -26,
         imageAngle: -0.08,
         textRightPadding: 135,
-        pillBackground: Color(0xFFFF8FA0),
-        pillText: Colors.white,
+        progressPanel: Color(0xFFFF8FA0),
+        progressTrack: Color(0xFFFFB7C0),
+        progressFill: _SectionsScreenState._accentColor,
+        progressText: Colors.white,
       );
   }
 }
@@ -462,24 +529,4 @@ int _displayTotalLevels(int totalLevels) {
   }
 
   return totalLevels - 1;
-}
-
-String _levelWord(int count) {
-  final value = count.abs();
-  final lastTwo = value % 100;
-  final last = value % 10;
-
-  if (lastTwo >= 11 && lastTwo <= 14) {
-    return 'уровней';
-  }
-
-  if (last == 1) {
-    return 'уровень';
-  }
-
-  if (last >= 2 && last <= 4) {
-    return 'уровня';
-  }
-
-  return 'уровней';
 }

@@ -139,6 +139,7 @@ public class ContentService : IContentService
         }
 
         var sectionLevels = await _context.Levels
+            .Include(candidate => candidate.Words)
             .Where(candidate => candidate.SectionId == level.SectionId && candidate.IsActive)
             .OrderBy(candidate => candidate.SortOrder)
             .ToListAsync(cancellationToken);
@@ -155,7 +156,7 @@ public class ContentService : IContentService
             LevelNumber = level.LevelNumber,
             CefrLevel = level.CefrLevel,
             Description = level.Description,
-            WordsCount = level.Words.Count(word => word.IsActive),
+            WordsCount = CountWordsForDisplay(level, sectionLevels),
             ExercisesCount = level.Exercises.Count(exercise => exercise.IsActive),
             IsFinalTest = level.IsFinalTest,
             Status = GetLevelStatus(level, progress, sectionLevels),
@@ -203,10 +204,11 @@ public class ContentService : IContentService
             LevelNumber = level.LevelNumber,
             CefrLevel = level.CefrLevel,
             Description = level.Description,
-            WordsCount = level.Words.Count(word => word.IsActive),
+            WordsCount = CountWordsForDisplay(level, sectionLevels),
             ExercisesCount = level.Exercises.Count(exercise => exercise.IsActive),
             IsFinalTest = level.IsFinalTest,
-            Status = GetLevelStatus(level, progress, sectionLevels)
+            Status = GetLevelStatus(level, progress, sectionLevels),
+            CompletedAt = progress?.CompletedAt
         };
     }
 
@@ -220,6 +222,19 @@ public class ContentService : IContentService
         return await _context.UserLevelProgresses
             .Where(progress => progress.UserId == userId && levelIds.Contains(progress.LevelId))
             .ToDictionaryAsync(progress => progress.LevelId, cancellationToken);
+    }
+
+    private static int CountWordsForDisplay(Level level, List<Level> sectionLevels)
+    {
+        if (!level.IsFinalTest)
+        {
+            return level.Words.Count(word => word.IsActive);
+        }
+
+        return sectionLevels
+            .Where(candidate => !candidate.IsFinalTest)
+            .SelectMany(candidate => candidate.Words)
+            .Count(word => word.IsActive);
     }
 
     private static string GetLevelStatus(

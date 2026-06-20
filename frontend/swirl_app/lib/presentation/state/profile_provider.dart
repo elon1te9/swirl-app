@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/storage/token_storage.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../data/api/profile_api.dart';
 import '../../domain/models/avatar_model.dart';
 import '../../domain/models/profile_model.dart';
@@ -28,7 +29,7 @@ class ProfileController {
     try {
       return await profileApi.getProfile();
     } on DioException catch (error) {
-      if (error.response?.statusCode == 401) {
+      if (isUnauthorizedError(error)) {
         throw ProfileUnauthorizedException();
       }
 
@@ -40,7 +41,7 @@ class ProfileController {
     try {
       return await profileApi.getAvatars();
     } on DioException catch (error) {
-      if (error.response?.statusCode == 401) {
+      if (isUnauthorizedError(error)) {
         throw ProfileUnauthorizedException();
       }
 
@@ -55,7 +56,7 @@ class ProfileController {
     try {
       return await profileApi.updateProfile(name: name, avatarId: avatarId);
     } on DioException catch (error) {
-      if (error.response?.statusCode == 401) {
+      if (isUnauthorizedError(error)) {
         throw ProfileUnauthorizedException();
       }
 
@@ -71,7 +72,12 @@ class ProfileController {
         throw Exception('Проверьте имя и аватарку.');
       }
 
-      throw Exception('Не удалось сохранить профиль. Попробуйте еще раз.');
+      throw Exception(
+        friendlyDioMessage(
+          error,
+          fallback: 'Не удалось сохранить профиль. Попробуйте еще раз.',
+        ),
+      );
     }
   }
 
@@ -90,11 +96,8 @@ class ProfileUnauthorizedException implements Exception {
 }
 
 String profileErrorText(DioException error) {
-  if (error.type == DioExceptionType.connectionTimeout ||
-      error.type == DioExceptionType.receiveTimeout ||
-      error.type == DioExceptionType.connectionError) {
-    return 'Не удалось подключиться к серверу. Проверьте интернет и попробуйте еще раз.';
-  }
-
-  return 'Не удалось загрузить профиль. Попробуйте еще раз.';
+  return friendlyDioMessage(
+    error,
+    fallback: 'Не удалось загрузить профиль. Попробуйте еще раз.',
+  );
 }

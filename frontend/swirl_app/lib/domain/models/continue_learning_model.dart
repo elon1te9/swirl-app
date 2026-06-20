@@ -35,6 +35,7 @@ class ContinueLevelModel {
     required this.levelNumber,
     required this.status,
     required this.isFinalTest,
+    required this.completedAt,
   });
 
   final int id;
@@ -43,6 +44,7 @@ class ContinueLevelModel {
   final int levelNumber;
   final String status;
   final bool isFinalTest;
+  final DateTime? completedAt;
 
   factory ContinueLevelModel.fromJson(Map<String, dynamic> json) {
     return ContinueLevelModel(
@@ -52,6 +54,7 @@ class ContinueLevelModel {
       levelNumber: _intValue(json['levelNumber']),
       status: _stringValue(json['status']),
       isFinalTest: json['isFinalTest'] == true,
+      completedAt: _dateTimeValue(json['completedAt']),
     );
   }
 }
@@ -90,7 +93,29 @@ class ContinueLearningModel {
       return 'Финальный тест';
     }
 
-    return 'Уровень ${nextLevel.levelNumber} - Легкий';
+    final difficulty = _levelDifficultyName(nextLevel.levelNumber);
+    if (difficulty == null) {
+      return 'Уровень ${nextLevel.levelNumber}';
+    }
+
+    return 'Уровень ${nextLevel.levelNumber} - $difficulty';
+  }
+}
+
+String? _levelDifficultyName(int levelNumber) {
+  switch (levelNumber) {
+    case 1:
+      return 'Базовый';
+    case 2:
+      return 'Легкий';
+    case 3:
+      return 'Средний';
+    case 4:
+      return 'Продвинутый';
+    case 5:
+      return 'Эксперт';
+    default:
+      return null;
   }
 }
 
@@ -112,4 +137,12 @@ int _intValue(Object? value) {
   }
 
   return 0;
+}
+
+DateTime? _dateTimeValue(Object? value) {
+  if (value is! String || value.isEmpty) {
+    return null;
+  }
+
+  return DateTime.tryParse(value);
 }

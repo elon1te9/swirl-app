@@ -42,9 +42,6 @@ public class ProfileService : IProfileService
             return null;
         }
 
-        var learnedWordsCount = await _context.UserWordProgresses
-            .CountAsync(progress => progress.UserId == userId, cancellationToken);
-
         var completedLevelsCount = await _context.UserLevelProgresses
             .CountAsync(
                 progress => progress.UserId == userId && progress.Status == "completed",
@@ -54,6 +51,15 @@ public class ProfileService : IProfileService
             .Where(progress => progress.UserId == userId && progress.Status == "completed")
             .Select(progress => progress.LevelId)
             .ToListAsync(cancellationToken);
+
+        var learnedWordsCount = await _context.Words
+            .CountAsync(
+                word =>
+                    word.IsActive
+                    && word.Level.IsActive
+                    && !word.Level.IsFinalTest
+                    && completedLevelIds.Contains(word.LevelId),
+                cancellationToken);
 
         var completedLevelIdsSet = completedLevelIds.ToHashSet();
         var sections = await _context.Sections
@@ -88,6 +94,7 @@ public class ProfileService : IProfileService
             AvatarUrl = profile.Avatar.ImageUrl,
             CurrentStreak = profile.CurrentStreak,
             BestStreak = profile.BestStreak,
+            LastActivityDate = profile.LastActivityDate,
             LearnedWordsCount = learnedWordsCount,
             CompletedLevelsCount = completedLevelsCount,
             SectionsProgress = sectionProgress

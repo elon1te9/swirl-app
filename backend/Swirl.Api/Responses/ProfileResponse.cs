@@ -10,6 +10,8 @@ public class ProfileResponse
 
     public int BestStreak { get; set; }
 
+    public DateOnly? LastActivityDate { get; set; }
+
     public int LearnedWordsCount { get; set; }
 
     public int CompletedLevelsCount { get; set; }

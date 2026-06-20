@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router.dart';
+import '../../core/utils/api_error_utils.dart';
 import '../../domain/models/level_model.dart';
 import '../../domain/models/section_model.dart';
 import '../state/learning_provider.dart';
@@ -195,7 +196,10 @@ class _LevelMapScreenState extends ConsumerState<LevelMapScreen> {
   }
 
   String _messageFromError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return friendlyErrorMessage(
+      error,
+      fallback: 'Не удалось загрузить уровни. Попробуйте еще раз.',
+    );
   }
 }
 
@@ -225,16 +229,18 @@ class _Header extends StatelessWidget {
             ),
           ),
           Center(
-            child: Text(
-              section.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1.8,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 54),
+              child: Text(
+                section.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -406,7 +412,6 @@ class _LevelNodeContent extends StatelessWidget {
           color: style.foreground,
           fontSize: 36,
           fontWeight: FontWeight.w500,
-          letterSpacing: -1.8,
         ),
       );
     }
@@ -421,7 +426,6 @@ class _LevelNodeContent extends StatelessWidget {
         color: style.foreground,
         fontSize: 36,
         fontWeight: FontWeight.w500,
-        letterSpacing: -1.8,
       ),
     );
   }
@@ -444,12 +448,7 @@ class _LevelLabel extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       textAlign: alignRight ? TextAlign.right : TextAlign.left,
-      style: TextStyle(
-        color: color,
-        fontSize: 22,
-        fontWeight: FontWeight.w500,
-        letterSpacing: -1.1,
-      ),
+      style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w500),
     );
   }
 }
@@ -595,9 +594,9 @@ class _LevelDetailsSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text(
-                  'Изучить слова',
-                  style: TextStyle(
+                child: Text(
+                  details.isFinalTest ? 'Повторить слова' : 'Изучить слова',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Montserrat',
@@ -639,7 +638,6 @@ class _SheetHero extends StatelessWidget {
                     color: _LevelMapScreenState._solidCardColor,
                     fontSize: 34,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -1.7,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -711,14 +709,20 @@ class _StatChip extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: _LevelMapScreenState._solidCardColor,
-              fontSize: 25,
-              fontWeight: FontWeight.w800,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: _LevelMapScreenState._solidCardColor,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
         ],
@@ -902,17 +906,17 @@ String _levelMapTitle(LevelModel level) {
 
 String _sheetTitle(LevelModel level) {
   if (level.isFinalTest) {
-    return 'Тест по разделу';
+    return 'Итог';
   }
 
   return 'Уровень ${level.levelNumber}';
 }
 
 String _sheetSubtitle(LevelModel level) {
-  final cefr = level.cefrLevel.trim();
+  final cefr = _cefrText(level);
   final levelTitle = _levelMapTitle(level);
 
-  if (cefr.isEmpty || level.isFinalTest) {
+  if (cefr == '-' || level.isFinalTest) {
     return levelTitle;
   }
 
@@ -921,7 +925,12 @@ String _sheetSubtitle(LevelModel level) {
 
 String _cefrText(LevelModel level) {
   final cefr = level.cefrLevel.trim();
-  return cefr.isEmpty ? '-' : cefr;
+  if (cefr.isEmpty) {
+    return '-';
+  }
+
+  final parts = cefr.split('/');
+  return parts.last.trim().isEmpty ? cefr : parts.last.trim();
 }
 
 String _mascotAssetPath(LevelModel level) {

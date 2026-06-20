@@ -133,6 +133,7 @@ Response:
   "avatarUrl": "/media/avatars/avatar_1.png",
   "currentStreak": 4,
   "bestStreak": 7,
+  "lastActivityDate": "2026-05-13",
   "learnedWordsCount": 45,
   "completedLevelsCount": 8,
   "sectionsProgress": [
@@ -270,7 +271,8 @@ Response:
     "wordsCount": 10,
     "exercisesCount": 20,
     "isFinalTest": false,
-    "status": "completed"
+    "status": "completed",
+    "completedAt": "2026-05-13T12:30:00"
   },
   {
     "id": 2,
@@ -282,7 +284,8 @@ Response:
     "wordsCount": 10,
     "exercisesCount": 20,
     "isFinalTest": false,
-    "status": "available"
+    "status": "available",
+    "completedAt": null
   },
   {
     "id": 6,

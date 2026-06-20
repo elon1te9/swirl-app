@@ -4,6 +4,7 @@ class ProfileModel {
     required this.avatarUrl,
     required this.currentStreak,
     required this.bestStreak,
+    required this.lastActivityDate,
     required this.learnedWordsCount,
     required this.completedLevelsCount,
     required this.sectionsProgress,
@@ -13,6 +14,7 @@ class ProfileModel {
   final String avatarUrl;
   final int currentStreak;
   final int bestStreak;
+  final DateTime? lastActivityDate;
   final int learnedWordsCount;
   final int completedLevelsCount;
   final List<SectionProgressModel> sectionsProgress;
@@ -35,6 +37,7 @@ class ProfileModel {
       avatarUrl: _stringValue(json['avatarUrl']),
       currentStreak: _intValue(json['currentStreak']),
       bestStreak: _intValue(json['bestStreak']),
+      lastActivityDate: _dateValue(json['lastActivityDate']),
       learnedWordsCount: _intValue(json['learnedWordsCount']),
       completedLevelsCount: _intValue(json['completedLevelsCount']),
       sectionsProgress: sections,
@@ -80,4 +83,17 @@ int _intValue(Object? value) {
   }
 
   return 0;
+}
+
+DateTime? _dateValue(Object? value) {
+  if (value is! String || value.trim().isEmpty) {
+    return null;
+  }
+
+  final parsed = DateTime.tryParse(value.trim());
+  if (parsed == null) {
+    return null;
+  }
+
+  return DateTime(parsed.year, parsed.month, parsed.day);
 }
