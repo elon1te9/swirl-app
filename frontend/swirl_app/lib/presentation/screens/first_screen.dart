@@ -6,9 +6,9 @@ import '../../app/router.dart';
 class FirstScreen extends StatelessWidget {
   const FirstScreen({super.key});
 
-  static const _blue = Color(0xFF97DBFF);
-  static const _purple = Color(0xFF6F73D2);
-  static const _darkText = Color(0xFF27233A);
+  static const _blue = Color.fromRGBO(151, 219, 255, 1);
+  static const _purple = Color.fromRGBO(111, 115, 210, 1);
+  static const _darkText = Color.fromRGBO(39, 35, 58, 1);
 
   @override
   Widget build(BuildContext context) {

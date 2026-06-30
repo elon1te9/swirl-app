@@ -17,10 +17,10 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
-  static const _pageColor = Color(0xFF6F73D2);
-  static const _cardColor = Color(0xCC27233A);
-  static const _solidCardColor = Color(0xFF27233A);
-  static const _accentColor = Color(0xFF97DBFF);
+  static const _pageColor = Color.fromRGBO(111, 115, 210, 1);
+  static const _cardColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _solidCardColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _accentColor = Color.fromRGBO(151, 219, 255, 1);
 
   final _nameController = TextEditingController();
 

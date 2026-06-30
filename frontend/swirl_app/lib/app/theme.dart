@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  static const Color _primary = Color(0xFF58A6FF);
-  static const Color _secondary = Color(0xFFFFD166);
-  static const Color _background = Color(0xFFF7FBFF);
-  static const Color _surface = Color(0xFFFFFFFF);
-  static const Color _text = Color(0xFF263238);
+  static const Color _primary = Color.fromRGBO(88, 166, 255, 1);
+  static const Color _secondary = Color.fromRGBO(255, 209, 102, 1);
+  static const Color _background = Color.fromRGBO(247, 251, 255, 1);
+  static const Color _surface = Color.fromRGBO(255, 255, 255, 1);
+  static const Color _text = Color.fromRGBO(38, 50, 56, 1);
 
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(

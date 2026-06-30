@@ -18,11 +18,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  static const _pageColor = Color(0xFF6F73D2);
-  static const _cardColor = Color(0xCC27233A);
-  static const _solidCardColor = Color(0xFF27233A);
-  static const _accentColor = Color(0xFF97DBFF);
-  static const _dangerColor = Color(0xFFD7263D);
+  static const _pageColor = Color.fromRGBO(111, 115, 210, 1);
+  static const _cardColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _solidCardColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _accentColor = Color.fromRGBO(151, 219, 255, 1);
+  static const _dangerColor = Color.fromRGBO(215, 38, 61, 1);
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -1070,7 +1070,7 @@ _SectionCardStyle _sectionCardStyle(String title) {
       return _SectionCardStyle(
         background: _HomeScreenState._dangerColor,
         text: Colors.white,
-        logo: const Color(0xFFFFCAD1),
+        logo: const Color.fromRGBO(255, 202, 209, 1),
         progress: _HomeScreenState._accentColor,
         progressBackground: Colors.white.withValues(alpha: 0.62),
         arrowBackground: Colors.white,

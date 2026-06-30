@@ -18,11 +18,11 @@ class LevelMapScreen extends ConsumerStatefulWidget {
 }
 
 class _LevelMapScreenState extends ConsumerState<LevelMapScreen> {
-  static const _pageColor = Color(0xFF27233A);
-  static const _cardColor = Color(0xCC27233A);
-  static const _solidCardColor = Color(0xFF27233A);
-  static const _accentColor = Color(0xFF97DBFF);
-  static const _purpleColor = Color(0xFF6F73D2);
+  static const _pageColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _cardColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _solidCardColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _accentColor = Color.fromRGBO(151, 219, 255, 1);
+  static const _purpleColor = Color.fromRGBO(111, 115, 210, 1);
 
   bool _isLoading = true;
   int? _loadingLevelId;
@@ -692,7 +692,7 @@ class _StatChip extends StatelessWidget {
       height: 90,
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFC7EEFF),
+        color: const Color.fromRGBO(199, 238, 255, 1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -745,7 +745,7 @@ class _DescriptionPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFC7EEFF),
+        color: const Color.fromRGBO(199, 238, 255, 1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(

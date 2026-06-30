@@ -15,11 +15,11 @@ class SectionsScreen extends ConsumerStatefulWidget {
 }
 
 class _SectionsScreenState extends ConsumerState<SectionsScreen> {
-  static const _pageColor = Color(0xFF27233A);
-  static const _cardColor = Color(0xCC27233A);
-  static const _solidCardColor = Color(0xFF27233A);
-  static const _accentColor = Color(0xFF97DBFF);
-  static const _dangerColor = Color(0xFFD7263D);
+  static const _pageColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _cardColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _solidCardColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _accentColor = Color.fromRGBO(151, 219, 255, 1);
+  static const _dangerColor = Color.fromRGBO(215, 38, 61, 1);
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -440,8 +440,8 @@ _SectionCardStyle _sectionCardStyle(String title) {
     case 'science':
       return const _SectionCardStyle(
         background: Colors.white,
-        title: Color(0xFF6F73D2),
-        imageTint: Color(0xFF6F73D2),
+        title: Color.fromRGBO(111, 115, 210, 1),
+        imageTint: Color.fromRGBO(111, 115, 210, 1),
         imageOpacity: 0.34,
         imageSize: 166,
         imageRight: -14,
@@ -449,10 +449,10 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -28,
         imageAngle: -0.12,
         textRightPadding: 136,
-        progressPanel: Color(0xFFE7E8FF),
-        progressTrack: Color(0xFFC9CBF5),
-        progressFill: Color(0xFF6F73D2),
-        progressText: Color(0xFF6F73D2),
+        progressPanel: Color.fromRGBO(231, 232, 255, 1),
+        progressTrack: Color.fromRGBO(201, 203, 245, 1),
+        progressFill: Color.fromRGBO(111, 115, 210, 1),
+        progressText: Color.fromRGBO(111, 115, 210, 1),
       );
     case 'health':
       return const _SectionCardStyle(
@@ -466,8 +466,8 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -22,
         imageAngle: -0.06,
         textRightPadding: 140,
-        progressPanel: Color(0xFFDDF3FF),
-        progressTrack: Color(0xFFF3FBFF),
+        progressPanel: Color.fromRGBO(221, 243, 255, 1),
+        progressTrack: Color.fromRGBO(243, 251, 255, 1),
         progressFill: _SectionsScreenState._dangerColor,
         progressText: _SectionsScreenState._accentColor,
       );
@@ -475,7 +475,7 @@ _SectionCardStyle _sectionCardStyle(String title) {
       return const _SectionCardStyle(
         background: _SectionsScreenState._dangerColor,
         title: Colors.white,
-        imageTint: Color(0xFFFFCAD1),
+        imageTint: Color.fromRGBO(255, 202, 209, 1),
         imageOpacity: 0.7,
         imageSize: 160,
         imageRight: -3,
@@ -483,8 +483,8 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -35,
         imageAngle: -0.05,
         textRightPadding: 92,
-        progressPanel: Color(0xFFEB939E),
-        progressTrack: Color(0xFFFFB7C0),
+        progressPanel: Color.fromRGBO(235, 147, 158, 1),
+        progressTrack: Color.fromRGBO(255, 183, 192, 1),
         progressFill: _SectionsScreenState._accentColor,
         progressText: Colors.white,
       );
@@ -501,8 +501,8 @@ _SectionCardStyle _sectionCardStyle(String title) {
         imageBottom: -26,
         imageAngle: -0.08,
         textRightPadding: 135,
-        progressPanel: Color(0xFFFF8FA0),
-        progressTrack: Color(0xFFFFB7C0),
+        progressPanel: Color.fromRGBO(255, 143, 160, 1),
+        progressTrack: Color.fromRGBO(255, 183, 192, 1),
         progressFill: _SectionsScreenState._accentColor,
         progressText: Colors.white,
       );

@@ -16,18 +16,16 @@ class SignUpScreen extends ConsumerStatefulWidget {
 }
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
-  // Stage 2: avatar is chosen automatically during registration.
-  // The user will be able to change it later in profile settings.
   static final _random = Random();
   static const _designWidth = 393.0;
   static const _designHeight = 852.0;
   static const _keyboardVisibleBottomY = 647.0;
-  static const _backgroundColor = Color(0xFF97DBFF);
-  static const _blobColor = Color(0xFF6F73D2);
-  static const _darkColor = Color(0xFF27233A);
-  static const _softDarkColor = Color(0xCC27233A);
-  static const _linkColor = Color(0xFF6F73D2);
-  static const _placeholderColor = Color(0xB327233A);
+  static const _backgroundColor = Color.fromRGBO(151, 219, 255, 1);
+  static const _blobColor = Color.fromRGBO(111, 115, 210, 1);
+  static const _darkColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _softDarkColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _linkColor = Color.fromRGBO(111, 115, 210, 1);
+  static const _placeholderColor = Color.fromRGBO(39, 35, 58, 0.7);
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -163,16 +161,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
               return Stack(
                 children: [
-                  Form(
-                    key: _formKey,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOut,
-                      transform: Matrix4.translationValues(
-                        0,
-                        -keyboardShift,
-                        0,
-                      ),
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    top: -keyboardShift,
+                    left: 0,
+                    right: 0,
+                    height: constraints.maxHeight,
+                    child: Form(
+                      key: _formKey,
                       child: SizedBox(
                         height: constraints.maxHeight,
                         child: Stack(
@@ -398,11 +395,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       left: left + x * scale,
       top: y * scale,
       width: width * scale,
-      child: Transform.scale(
-        scale: scale,
-        alignment: Alignment.topLeft,
-        child: SizedBox(width: width, child: child),
-      ),
+      child: child,
     );
   }
 

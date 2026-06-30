@@ -77,7 +77,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       'Проверяем вход...',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFF434A6B),
+                        color: Color.fromRGBO(67, 74, 107, 1),
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),

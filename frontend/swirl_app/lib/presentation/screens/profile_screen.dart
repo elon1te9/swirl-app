@@ -16,10 +16,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  static const _pageColor = Color(0xFF6F73D2);
-  static const _cardColor = Color(0xCC27233A);
-  static const _solidCardColor = Color(0xFF27233A);
-  static const _accentColor = Color(0xFF97DBFF);
+  static const _pageColor = Color.fromRGBO(111, 115, 210, 1);
+  static const _cardColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _solidCardColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _accentColor = Color.fromRGBO(151, 219, 255, 1);
 
   bool _isLoading = true;
   bool _isLoggingOut = false;
@@ -558,13 +558,13 @@ double _progressValue(int progressPercent) {
 Color _sectionProgressColor(String title) {
   switch (title.trim().toLowerCase()) {
     case 'food':
-      return const Color(0xFFD7263D);
+      return const Color.fromRGBO(215, 38, 61, 1);
     case 'health':
-      return const Color(0xFF97DBFF);
+      return const Color.fromRGBO(151, 219, 255, 1);
     case 'science':
-      return const Color(0xFF8F8BE8);
+      return const Color.fromRGBO(143, 139, 232, 1);
     case 'wardrobe':
-      return const Color(0xFFFFD166);
+      return const Color.fromRGBO(255, 209, 102, 1);
     default:
       return _ProfileScreenState._accentColor;
   }

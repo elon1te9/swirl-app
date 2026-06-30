@@ -25,13 +25,13 @@ class TasksScreen extends ConsumerStatefulWidget {
 }
 
 class _TasksScreenState extends ConsumerState<TasksScreen> {
-  static const _pageColor = Color(0xFF27233A);
-  static const _cardColor = Color(0xCC27233A);
-  static const _solidCardColor = Color(0xFF27233A);
-  static const _accentColor = Color(0xFF97DBFF);
-  static const _successColor = Color(0xFF35D06F);
-  static const _purpleColor = Color(0xFF6F73D2);
-  static const _dangerColor = Color(0xFFD7263D);
+  static const _pageColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _cardColor = Color.fromRGBO(39, 35, 58, 0.8);
+  static const _solidCardColor = Color.fromRGBO(39, 35, 58, 1);
+  static const _accentColor = Color.fromRGBO(151, 219, 255, 1);
+  static const _successColor = Color.fromRGBO(53, 208, 111, 1);
+  static const _purpleColor = Color.fromRGBO(111, 115, 210, 1);
+  static const _dangerColor = Color.fromRGBO(215, 38, 61, 1);
 
   final TextEditingController _answerController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -342,17 +342,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           _sectionId = details.sectionId;
         });
       }
-    } catch (_) {
-      // The result sheet can still navigate back using the current section.
-    }
+    } catch (_) {}
   }
 
   Future<void> _ignoreRefreshError(Future<dynamic> future) async {
     try {
       await future;
-    } catch (_) {
-      // Fresh data is helpful here, but the saved attempt result is primary.
-    }
+    } catch (_) {}
   }
 
   void _goToLevelSelection() {
@@ -467,6 +463,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         controller: _answerController,
                         enabled: _lastAnswerCorrect == null && !_isCompleting,
                         answerState: _lastAnswerCorrect,
+                        onSubmitted: () => _submitInputAnswer(exercise),
                         onChanged: (_) {
                           if (_answerError != null) {
                             setState(() {
@@ -860,12 +857,14 @@ class _InputAnswer extends StatelessWidget {
     required this.controller,
     required this.enabled,
     required this.answerState,
+    required this.onSubmitted,
     required this.onChanged,
   });
 
   final TextEditingController controller;
   final bool enabled;
   final bool? answerState;
+  final VoidCallback onSubmitted;
   final ValueChanged<String> onChanged;
 
   @override
@@ -888,6 +887,11 @@ class _InputAnswer extends StatelessWidget {
       autocorrect: false,
       enableSuggestions: false,
       onChanged: onChanged,
+      onSubmitted: (_) {
+        if (enabled) {
+          onSubmitted();
+        }
+      },
       style: TextStyle(
         color: textColor,
         fontSize: 20,
