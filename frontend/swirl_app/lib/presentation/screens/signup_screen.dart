@@ -42,6 +42,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
   String? _errorMessage;
 
   @override
@@ -77,7 +81,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
-    if (!_formKey.currentState!.validate()) {
+    final nameError = _validateName(_nameController.text);
+    final emailError = _validateEmail(_emailController.text);
+    final passwordError = _validatePassword(_passwordController.text);
+    final confirmPasswordError = _validateConfirmPassword(
+      _confirmPasswordController.text,
+    );
+
+    setState(() {
+      _nameError = nameError;
+      _emailError = emailError;
+      _passwordError = passwordError;
+      _confirmPasswordError = confirmPasswordError;
+      _errorMessage = null;
+    });
+
+    if (nameError != null ||
+        emailError != null ||
+        passwordError != null ||
+        confirmPasswordError != null) {
       return;
     }
 
@@ -137,6 +159,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 keyboardBottom: keyboardBottom,
                 scale: scale,
               );
+              final formErrorMessage = _formErrorMessage;
 
               return Stack(
                 children: [
@@ -182,7 +205,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 focusNode: _nameFocusNode,
                                 hint: 'Имя',
                                 textInputAction: TextInputAction.next,
-                                validator: _validateName,
+                                errorText: _visibleNameError,
+                                onChanged: _handleFieldChanged,
                               ),
                             ),
                             _positioned(
@@ -197,7 +221,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 hint: 'Почта',
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
-                                validator: _validateEmail,
+                                errorText: _visibleEmailError,
+                                onChanged: _handleFieldChanged,
                               ),
                             ),
                             _positioned(
@@ -212,7 +237,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 hint: 'Пароль',
                                 obscure: !_isPasswordVisible,
                                 textInputAction: TextInputAction.next,
-                                validator: _validatePassword,
+                                errorText: _visiblePasswordError,
+                                onChanged: _handleFieldChanged,
                                 icon: _passwordVisibilityButton(),
                               ),
                             ),
@@ -230,25 +256,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 textInputAction: TextInputAction.done,
                                 onSubmitted: (_) =>
                                     _isLoading ? null : _submit(),
-                                validator: _validateConfirmPassword,
+                                errorText: _visibleConfirmPasswordError,
+                                onChanged: _handleFieldChanged,
                                 icon: _passwordVisibilityButton(),
                               ),
                             ),
-                            if (_errorMessage != null)
+                            if (formErrorMessage != null)
                               _positioned(
                                 left: left,
                                 scale: scale,
                                 x: 50,
                                 y: 650,
                                 width: 293,
-                                child: Text(
-                                  _errorMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                    fontSize: 14,
-                                  ),
-                                ),
+                                child: _buildFieldError(formErrorMessage),
                               ),
                             _positioned(
                               left: left,
@@ -437,21 +457,26 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     required TextEditingController controller,
     required FocusNode focusNode,
     required String hint,
-    required String? Function(String?) validator,
+    required String? errorText,
     Widget? icon,
     bool obscure = false,
     TextInputType? keyboardType,
     TextInputAction? textInputAction,
+    ValueChanged<String>? onChanged,
     ValueChanged<String>? onSubmitted,
   }) {
+    final borderColor = errorText == null
+        ? _softDarkColor
+        : Colors.red.shade400;
+
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
       obscureText: obscure,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
+      onChanged: onChanged,
       onFieldSubmitted: onSubmitted,
-      validator: validator,
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w500,
@@ -473,22 +498,80 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: _softDarkColor, width: 2),
+          borderSide: BorderSide(color: borderColor, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: _softDarkColor, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.red.shade400, width: 2),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.red.shade400, width: 2),
+          borderSide: BorderSide(color: borderColor, width: 2),
         ),
       ),
     );
+  }
+
+  Widget _buildFieldError(String message) {
+    return SizedBox(
+      height: 14,
+      child: Center(
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.error,
+            fontSize: 12,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? get _formErrorMessage {
+    return _nameError ??
+        _emailError ??
+        _passwordError ??
+        _confirmPasswordError ??
+        _errorMessage;
+  }
+
+  String? get _visibleNameError => _nameError;
+
+  String? get _visibleEmailError {
+    return _nameError == null ? _emailError : null;
+  }
+
+  String? get _visiblePasswordError {
+    return _nameError == null && _emailError == null ? _passwordError : null;
+  }
+
+  String? get _visibleConfirmPasswordError {
+    return _nameError == null && _emailError == null && _passwordError == null
+        ? _confirmPasswordError
+        : null;
+  }
+
+  bool get _hasValidationErrors {
+    return _nameError != null ||
+        _emailError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null;
+  }
+
+  void _handleFieldChanged(String _) {
+    if (!_hasValidationErrors && _errorMessage == null) {
+      return;
+    }
+
+    setState(() {
+      _nameError = _validateName(_nameController.text);
+      _emailError = _validateEmail(_emailController.text);
+      _passwordError = _validatePassword(_passwordController.text);
+      _confirmPasswordError = _validateConfirmPassword(
+        _confirmPasswordController.text,
+      );
+      _errorMessage = null;
+    });
   }
 
   String? _validateName(String? value) {
