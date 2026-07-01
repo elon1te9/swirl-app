@@ -94,7 +94,10 @@ class _DailyTestScreenState extends ConsumerState<DailyTestScreen> {
       setState(() {
         _test = test;
         _isLoading = false;
-        if (!test.isAvailable) {
+        if (test.isCompleted) {
+          _alreadyCompleted = true;
+          _unavailableMessage = _unavailableText(test.reason);
+        } else if (!test.isAvailable) {
           _unavailableMessage = _unavailableText(test.reason);
         } else if (test.exercises.isEmpty) {
           _unavailableMessage = 'Тест пока пуст.';
@@ -469,9 +472,16 @@ class _DailyTestScreenState extends ConsumerState<DailyTestScreen> {
   }
 
   String _unavailableText(String reason) {
-    if (reason.trim().isEmpty ||
-        reason.trim().toLowerCase() == 'not enough learned words') {
+    final normalizedReason = reason.trim().toLowerCase();
+
+    if (normalizedReason.isEmpty ||
+        normalizedReason == 'not enough learned words') {
       return 'Изучите больше слов, чтобы открыть ежедневный тест.';
+    }
+
+    if (normalizedReason == 'daily test is already completed' ||
+        normalizedReason == 'daily_test_already_completed') {
+      return 'Ежедневный тест уже пройден сегодня.';
     }
 
     return reason;

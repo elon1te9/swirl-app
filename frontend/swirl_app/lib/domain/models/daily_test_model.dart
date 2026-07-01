@@ -2,6 +2,7 @@ class DailyTestModel {
   const DailyTestModel({
     required this.date,
     required this.isAvailable,
+    required this.isCompleted,
     required this.exercisesCount,
     required this.reason,
     required this.exercises,
@@ -9,6 +10,7 @@ class DailyTestModel {
 
   final String date;
   final bool isAvailable;
+  final bool isCompleted;
   final int exercisesCount;
   final String reason;
   final List<DailyTestExerciseModel> exercises;
@@ -17,6 +19,7 @@ class DailyTestModel {
     return DailyTestModel(
       date: _stringValue(json['date']),
       isAvailable: json['isAvailable'] == true,
+      isCompleted: json['isCompleted'] == true,
       exercisesCount: _intValue(json['exercisesCount']),
       reason: _stringValue(json['reason']),
       exercises: _jsonList(

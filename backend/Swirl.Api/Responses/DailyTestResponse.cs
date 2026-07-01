@@ -8,6 +8,8 @@ public class DailyTestResponse
 
     public bool IsAvailable { get; set; }
 
+    public bool IsCompleted { get; set; }
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? ExercisesCount { get; set; }
 

@@ -43,6 +43,25 @@ public class DailyTestService : IDailyTestService
         CancellationToken cancellationToken = default)
     {
         var today = GetServerDate();
+        var isCompletedToday = await _context.DailyTests
+            .AnyAsync(
+                candidate =>
+                    candidate.UserId == userId
+                    && candidate.TestDate == today
+                    && candidate.IsCompleted,
+                cancellationToken);
+
+        if (isCompletedToday)
+        {
+            return new DailyTestResponse
+            {
+                Date = today,
+                IsAvailable = false,
+                IsCompleted = true,
+                Reason = "Daily test is already completed"
+            };
+        }
+
         var learnedWords = await GetLearnedWordsAsync(userId, cancellationToken);
 
         if (learnedWords.Count < MinimumLearnedWords)
@@ -51,6 +70,7 @@ public class DailyTestService : IDailyTestService
             {
                 Date = today,
                 IsAvailable = false,
+                IsCompleted = false,
                 Reason = "Not enough learned words"
             };
         }
@@ -74,6 +94,7 @@ public class DailyTestService : IDailyTestService
         {
             Date = today,
             IsAvailable = true,
+            IsCompleted = false,
             ExercisesCount = exercises.Count,
             Exercises = exercises
         };

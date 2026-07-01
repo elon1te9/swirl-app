@@ -8,6 +8,7 @@ import '../../core/utils/media_url_builder.dart';
 import '../../domain/models/continue_learning_model.dart';
 import '../../domain/models/profile_model.dart';
 import '../state/continue_learning_provider.dart';
+import '../state/daily_test_provider.dart';
 import '../state/profile_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ProfileModel? _profile;
   ContinueLearningModel? _continueLearning;
   List<ContinueSectionModel> _sections = const [];
+  bool _hideDailyTestCard = false;
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final sections = await learningController.loadSections();
       final continueLearning = await learningController
           .loadContinueLearningFromSections(sections);
+      final hideDailyTestCard = await _shouldHideDailyTestCard();
 
       if (!mounted) {
         return;
@@ -57,6 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _profile = profile;
         _continueLearning = continueLearning;
         _sections = sections;
+        _hideDailyTestCard = hideDailyTestCard;
         _isLoading = false;
       });
     } on ProfileUnauthorizedException {
@@ -64,6 +68,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         context.go(AppRoutes.first);
       }
     } on ContinueLearningUnauthorizedException {
+      if (mounted) {
+        context.go(AppRoutes.first);
+      }
+    } on DailyTestUnauthorizedException {
       if (mounted) {
         context.go(AppRoutes.first);
       }
@@ -151,9 +159,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             lastActivityDate: profile.lastActivityDate,
           ),
           const SizedBox(height: 22),
-          _DailyTestCard(onTap: () => context.go(AppRoutes.dailyTest)),
+          if (!_hideDailyTestCard)
+            _DailyTestCard(onTap: () => context.go(AppRoutes.dailyTest)),
           if (continueLearning != null) ...[
-            const SizedBox(height: 18),
+            SizedBox(height: _hideDailyTestCard ? 0 : 18),
             _ContinueLearningCard(
               continueLearning: continueLearning,
               onTap: () => context.go(
@@ -197,6 +206,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       error,
       fallback: 'Не удалось загрузить главную. Попробуйте еще раз.',
     );
+  }
+
+  Future<bool> _shouldHideDailyTestCard() async {
+    try {
+      final dailyTest = await ref
+          .read(dailyTestControllerProvider)
+          .loadDailyTest();
+      return dailyTest.isCompleted;
+    } on DailyTestAlreadyCompletedException {
+      return true;
+    } on DailyTestUnauthorizedException {
+      rethrow;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

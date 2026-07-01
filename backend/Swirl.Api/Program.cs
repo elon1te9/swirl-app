@@ -133,15 +133,22 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(FlutterDevelopmentCorsPolicy, policy =>
     {
-        if (corsOrigins.Length == 0)
+        if (builder.Environment.IsDevelopment())
         {
+            policy
+                .SetIsOriginAllowed(IsFlutterDevelopmentOrigin)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
             return;
         }
 
-        policy
-            .WithOrigins(corsOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (corsOrigins.Length > 0)
+        {
+            policy
+                .WithOrigins(corsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
     });
 });
 
@@ -197,12 +204,12 @@ app.UseExceptionHandler(errorApp =>
 
 Directory.CreateDirectory(mediaRootPath);
 app.UseHttpsRedirection();
+app.UseCors(FlutterDevelopmentCorsPolicy);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(mediaRootPath),
     RequestPath = mediaRequestPath
 });
-app.UseCors(FlutterDevelopmentCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
@@ -235,4 +242,19 @@ static string ToCamelCase(string value)
     }
 
     return char.ToLowerInvariant(value[0]) + value[1..];
+}
+
+static bool IsFlutterDevelopmentOrigin(string origin)
+{
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+    {
+        return false;
+    }
+
+    if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+    {
+        return false;
+    }
+
+    return uri.IsLoopback || uri.Host == "10.0.2.2";
 }
