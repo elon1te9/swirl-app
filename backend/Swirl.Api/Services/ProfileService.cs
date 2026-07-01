@@ -52,13 +52,14 @@ public class ProfileService : IProfileService
             .Select(progress => progress.LevelId)
             .ToListAsync(cancellationToken);
 
-        var learnedWordsCount = await _context.Words
+        var learnedWordsCount = await _context.UserWordProgresses
             .CountAsync(
-                word =>
-                    word.IsActive
-                    && word.Level.IsActive
-                    && !word.Level.IsFinalTest
-                    && completedLevelIds.Contains(word.LevelId),
+                progress =>
+                    progress.UserId == userId
+                    && progress.Word.IsActive
+                    && progress.Word.Level.IsActive
+                    && progress.Word.Level.Section.IsActive
+                    && !progress.Word.Level.IsFinalTest,
                 cancellationToken);
 
         var completedLevelIdsSet = completedLevelIds.ToHashSet();

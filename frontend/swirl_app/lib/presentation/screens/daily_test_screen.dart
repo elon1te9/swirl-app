@@ -1314,6 +1314,11 @@ class _StatusView extends StatelessWidget {
                   backgroundColor: _DailyTestScreenState._accentColor,
                   foregroundColor: _DailyTestScreenState._solidCardColor,
                   minimumSize: const Size.fromHeight(54),
+                  textStyle: const TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1328,6 +1333,7 @@ class _StatusView extends StatelessWidget {
                     'Обновить',
                     style: TextStyle(
                       color: Colors.white70,
+                      fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w700,
                     ),
                   ),
