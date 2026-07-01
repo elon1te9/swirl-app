@@ -151,14 +151,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   : const Icon(Icons.logout, size: 21),
               label: const Text(
                 'Выйти',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 side: const BorderSide(color: Colors.white, width: 1.6),
                 disabledForegroundColor: Colors.white60,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
